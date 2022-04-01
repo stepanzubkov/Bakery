@@ -1,0 +1,30 @@
+version: '3.6'
+
+services:
+  app:
+    build: .
+    depends_on:
+      - db
+    environment:
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg2://stepan:123456@db/bakery
+    networks:
+      - default
+    ports:
+      - 5000:5000
+    volumes:
+      - .:/app
+    restart: always
+
+  db:
+    environment:
+      POSTGRES_USER: stepan
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: bakery
+    image: postgres:latest
+    networks:
+      - default
+    ports:
+      - 5405:5432
+    restart: always
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
