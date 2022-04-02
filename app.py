@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from db import db, migrate, Products
 
 app = Flask(__name__)
@@ -10,4 +10,4 @@ migrate.init_app(app, db)
 
 @app.route('/', methods=['GET'])
 def index():
-    return 'Hello, Docker!'
+    return render_template('index.html')
