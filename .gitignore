@@ -2,6 +2,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,python,flask
 # Edit at https://www.toptal.com/developers/gitignore?templates=linux,visualstudiocode,python,flask
 
+### Docker postgres-data ###
+postgres-data/
+
 ### Flask ###
 instance/*
 !instance/.gitignore
