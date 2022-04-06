@@ -1,0 +1,61 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+
+
+header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid #121212;
+    position: fixed;
+    top: 0;
+    z-index: 10;
+    width: 100%;
+    background-color: #f9efb8;
+    align-items: center;
+    height: 90px;
+}
+
+h1.logo {
+    display: inline-block;
+    color: #121212;
+    text-decoration: none;
+    padding: 0px 30px;
+}
+
+menu.menu a.menu_link {
+    display: inline-block;
+    text-decoration: none;
+    padding: 20px;
+    color: #C06463;
+}
+
+div#content {
+    padding: 110px 60px;
+}
+
+div.popular_products {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 0px;
+
+}
+div.popular_product {
+    padding: 5px;
+    border: 1px solid black;
+    text-align: center;
+    width: 200px;
+}
+
+div.popular_product img {
+    width: 200px;
+    height: 200px;
+}
+
+footer {
+    background-color: #f9efb8;
+    padding: 20px;
+    border-top: 2px solid black;
+}

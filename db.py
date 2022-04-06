@@ -16,6 +16,10 @@ migrate = Migrate()
 
 
 class Products(db.Model):
-    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True,
+                   nullable=False, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
     price = db.Column(db.Float, nullable=False)
+    sales = db.Column(db.Integer, default=0, nullable=False)
+    image_url = db.Column(
+        db.String(50), default='/pictures/notfound.png', nullable=False)

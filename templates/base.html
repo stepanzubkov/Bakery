@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% if title %}
+            <title>Bakery - {{title}}</title>
+    {% else %}
+            <title>Bakery</title>
+    {% endif %}
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <a href="/"><h1 class="logo">Bakery</h1></a>
+        </div>
+        <menu class="menu">
+            <a href="/" class="menu_link">Menu</a>
+            <a href="/" class="menu_link">Profile</a>
+            <a href="/" class="menu_link">Blog</a>
+            <a href="/" class="menu_link">Contact</a>
+            <a href="/" class="menu_link">About us</a>
+        </menu>
+    </header>
+    <div id="content">
+        {% block content %}
+        {% endblock content %}
+        
+    </div>
+    <footer>
+        <p>Copyright &#169; 2022 Bakery</p>
+        <a href="https://github.com/Stepan-Zubkov/Bakery">Github</a>
+        <a href="mailto:zubkovbackend@gmail.com">My Work Email</a>
+        <a href="https://t.me/stepanzubkov">My Telegram</a>
+    </footer>
+</body>
+</html>
