@@ -13,9 +13,9 @@ header {
     top: 0;
     z-index: 10;
     width: 100%;
-    background-color: #f9efb8;
     align-items: center;
     height: 90px;
+    background-color: #f9efb8;
 }
 
 h1.logo {
@@ -34,6 +34,7 @@ menu.menu a.menu_link {
 
 div#content {
     padding: 110px 60px;
+    background-color: white;
 }
 
 div.popular_products {
@@ -55,7 +56,60 @@ div.popular_product img {
 }
 
 footer {
-    background-color: #f9efb8;
     padding: 20px;
     border-top: 2px solid black;
+    background-color: #f9efb8;
+}
+
+label {
+    display: block;
+    padding: 8px 0px;
+}
+
+input.submit {
+    display: block;
+    padding: 10px 30px;
+    margin: 18px auto;
+    font-size: 20px;
+    font-weight: bold;
+    border: 2px solid #777777;
+    border-radius: 4px;
+}
+
+form.registration {
+    margin: 0 auto;
+    width: 400px;
+}
+
+input.basic_field {
+    width: 100%;
+    height: 35px;
+    font-size: 24px;
+    border-radius: 4px;
+    outline: none;
+    border: 2px solid #2b2b2b;
+}
+
+input.basic_checkbox {
+    width: 20px;
+    height: 20px;
+}
+
+span.flash_success,
+span.flash_error {
+    color: white;
+    display: block;
+    width: 95%;
+    padding: 12px 16px;
+    margin: 20px 0px;
+}
+
+span.flash_success {
+    background-color: #12A243;
+    border: 2px solid #12AF12
+}
+
+span.flash_error  {
+    background-color: #A21243;
+    border: 2px solid #AF1212;
 }

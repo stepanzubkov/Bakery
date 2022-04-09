@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+{{ super() }}
+<form action="/registration" method="post" class="registration">
+    {% for cat, msg in get_flashed_messages(True) %}
+            <span class="flash_{{cat}}">{{msg}}</span>
+    {% endfor %}
+    
+    <h1 class="form_title">Registration</h1>
+    {{ form.csrf_token() }}
+    {% for field in form if field.name not in ['csrf_token', 'submit', 'remember_me'] %}
+            {{ field.label() }}
+            {{ field(class='basic_field') }}
+    {% endfor %}
+    {{ form.remember_me.label(style='display: inline-block;') }} {{ form.remember_me(class='basic_checkbox') }}
+    {{ form.submit(class='submit') }}
+</form>
+{% endblock %}
+

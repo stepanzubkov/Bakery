@@ -7,7 +7,7 @@
 <p>Made bakery for you with love.</p>
 <h1>These are our most popular products:</h1>
 <div class="popular_products">
-    {% for pr in products[:4] %}
+    {% for pr in products[:4] %}   
         <div class="popular_product">
             <img src="{{pr.image_url}}" alt="Product">
             <h3>{{pr.name}} / {{pr.price}}</h3>
@@ -24,6 +24,7 @@
     {% endfor %}
 
 </div>
+
 {% endblock content %}
 
 

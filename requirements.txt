@@ -1,4 +1,7 @@
 flask
 flask-sqlalchemy
 flask-migrate
+flask-wtf
+flask-mail
+email-validator
 psycopg2-binary

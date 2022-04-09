@@ -23,3 +23,15 @@ class Products(db.Model):
     sales = db.Column(db.Integer, default=0, nullable=False)
     image_url = db.Column(
         db.String(50), default='/pictures/notfound.png', nullable=False)
+
+
+class Users(db.Model):
+    id = db.Column(db.Integer, primary_key=True,
+                   nullable=False, autoincrement=True)
+    email = db.Column(db.String(100), nullable=False, unique=True)
+    password = db.Column(db.Text, nullable=False)
+    access_key = db.Column(db.String(100), nullable=False)
+    is_verified = db.Column(db.Boolean, default=False, nullable=False)
+    first_name = db.Column(db.String(50), nullable=False)
+    last_name = db.Column(db.String(50), nullable=False)
+    address = db.Column(db.String(100))
