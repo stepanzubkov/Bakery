@@ -26,3 +26,17 @@ class RegistrationForm(FlaskForm):
     ])
     remember_me = BooleanField('Remember me')
     submit = SubmitField('Create account')
+
+
+class LoginForm(FlaskForm):
+    email = EmailField('Email', validators=[
+        Email('Incorrect email'),
+        Length(min=10, max=100, message='Incorrect length'),
+        DataRequired()
+    ])
+    password = PasswordField('Password', validators=[
+        Length(min=4, max=100, message='Incorrect length'),
+        DataRequired()
+    ])
+    remember_me = BooleanField('Remember me')
+    submit = SubmitField('Sign in')

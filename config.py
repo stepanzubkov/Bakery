@@ -9,5 +9,5 @@ MAIL_SERVER = 'smtp.googlemail.com'
 MAIL_PORT = 587
 MAIL_USE_TLS = True
 MAIL_USERNAME = 'carlsbad.bakery@gmail.com'
-MAIL_DEFAULT_SENDER = 'carlsbad.bakery@gmail.com'
+MAIL_DEFAULT_SENDER = ('Carlsbad Bakery', 'carlsbad.bakery@gmail.com')
 MAIL_PASSWORD = 'bakery_carlsbad'
