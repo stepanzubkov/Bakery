@@ -113,3 +113,16 @@ span.flash_error  {
     background-color: #A21243;
     border: 2px solid #AF1212;
 }
+
+div.user_info {
+    display: flex;
+}
+
+p.field_error {
+    color: red;
+    padding: 10px 2px;
+}
+
+img.profile_avatar {
+    margin: 0px 40px 0px 0px;
+}

@@ -1,17 +1,16 @@
-from flask import Flask, render_template, send_from_directory, flash, request
-from flask_mail import Mail, Message
-from flask_login import login_required, login_user, current_user
-from werkzeug.security import generate_password_hash as gen_hash
-from werkzeug.security import check_password_hash as check_hash
-
-import os
-from base64 import b64encode
-from threading import Thread
-
-from forms import RegistrationForm, LoginForm
-from db import db, migrate, Products, Users
-from login import manager
 from user import User
+from login import manager
+from db import db, migrate, Products, Users
+from forms import RegistrationForm, LoginForm
+from threading import Thread
+from base64 import b64encode
+import os
+from werkzeug.security import check_password_hash as check_hash, \
+    generate_password_hash as gen_hash
+from flask_login import login_required, login_user, current_user
+from flask_mail import Mail, Message
+from flask import Flask, render_template, send_from_directory, \
+    flash, request, redirect
 
 
 app = Flask(__name__)
@@ -26,6 +25,22 @@ migrate.init_app(app, db)
 manager.login_view = 'login'
 manager.login_message = 'Sign in to access restricted pages'
 manager.login_message_category = 'error'
+
+
+def without_login(func):
+    """Decorator function that redirects the authenticated
+
+    not be visible to the user
+
+    Args:
+        func (function): route function
+    """
+    def wrapper(*args, **kwargs):
+        if current_user.is_authenticated:
+            return redirect('/profile')
+        func(*args, **kwargs)
+    wrapper.__name__ = func.__name__
+    return wrapper
 
 
 def async_send_mail(app, msg):
@@ -44,7 +59,6 @@ def send_mail(subject, recipient, template, **kwargs):
 
 
 @app.route('/', methods=['GET'])
-@login_required
 def index():
     # Most popular products
     products = Products.query.order_by(Products.sales.desc()).all()
@@ -58,6 +72,7 @@ def uploaded_file(filename):
 
 
 @app.route('/registration', methods=['GET', 'POST'])
+@without_login
 def registration():
     form = RegistrationForm()
     if form.validate_on_submit():
@@ -117,6 +132,7 @@ def confirm(id, key):
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@without_login
 def login():
     form = LoginForm()
     if form.validate_on_submit():
@@ -134,3 +150,10 @@ def login():
             flash(f"your id: {current_user.get_id()}", category='error')
 
     return render_template('login.html', title='Sign in', form=form)
+
+
+@app.route('/profile', methods=['GET'])
+@login_required
+def profile():
+    user = Users.query.get(current_user.get_id())
+    return render_template('profile.html', title='Profile', user=user)

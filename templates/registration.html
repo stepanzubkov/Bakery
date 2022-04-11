@@ -10,7 +10,7 @@
     {{ form.csrf_token() }}
     {% for field in form if field.name not in ['csrf_token', 'submit', 'remember_me'] %}
             {% for e in field.errors %}
-                    {{ e }}
+                    <p class="field_error">{{ e }}</p>
             {% endfor %}
             
             {{ field.label() }}

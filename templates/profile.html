@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+{{ super() }}
+<h1>Your profile</h1>
+<div class="user_info">
+    <img src="/static/images/avatar.png" alt="Avatar" class="profile_avatar">
+    <div>
+        <p class="user_info"><b>Name: </b>{{user.first_name + ' ' + user.last_name}}</p>
+        <p class="user_info"><b>Email: </b>{{user.email}}</p>
+        {% if user.address %}
+            <p class="user_info"><b>Address: </b>{{user.address}}</p>
+        {% else %}
+            <p class="user_info"><b>Address: </b>Not specified</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+
