@@ -1,13 +1,15 @@
 from user import User
 from login import manager
 from db import db, migrate, Products, Users
-from forms import RegistrationForm, LoginForm
+from forms import RegistrationForm, LoginForm, SettingsForm, \
+    EmailChangeForm, PasswordChangeForm
 from threading import Thread
 from base64 import b64encode
 import os
 from werkzeug.security import check_password_hash as check_hash, \
     generate_password_hash as gen_hash
-from flask_login import login_required, login_user, current_user
+from flask_login import login_required, login_user, current_user, \
+    logout_user
 from flask_mail import Mail, Message
 from flask import Flask, render_template, send_from_directory, \
     flash, request, redirect
@@ -38,7 +40,7 @@ def without_login(func):
     def wrapper(*args, **kwargs):
         if current_user.is_authenticated:
             return redirect('/profile')
-        func(*args, **kwargs)
+        return func(*args, **kwargs)
     wrapper.__name__ = func.__name__
     return wrapper
 
@@ -120,8 +122,8 @@ def confirm(id, key):
             db.session.commit()
 
             userlogin = User().create(user)
-            login_user(userlogin, remember=bool(request.args.get('remember')))
-            return "Success!"
+            login_user(userlogin, remember=eval(request.args.get('remember')))
+            return redirect('/profile')
         except Exception as e:
             print(f'ERROR WHILE CONFIRM EMAIL: {e}')
             db.session.rollback()
@@ -137,7 +139,7 @@ def login():
     form = LoginForm()
     if form.validate_on_submit():
         user = Users.query.filter_by(email=form.email.data).first()
-        if not user:
+        if not user or not check_hash(user.password, form.password.data):
             flash('Wrong email or password', category='error')
             return render_template('login.html', title='Sign in', form=form)
         if not user.is_verified:
@@ -147,7 +149,7 @@ def login():
         if user and check_hash(user.password, form.password.data):
             userlogin = User().create(user)
             login_user(userlogin, remember=form.remember_me.data)
-            flash(f"your id: {current_user.get_id()}", category='error')
+            return redirect('/profile')
 
     return render_template('login.html', title='Sign in', form=form)
 
@@ -157,3 +159,105 @@ def login():
 def profile():
     user = Users.query.get(current_user.get_id())
     return render_template('profile.html', title='Profile', user=user)
+
+
+@app.route('/profile/settings', methods=['GET', 'POST'])
+@login_required
+def profile_settings():
+    form = SettingsForm()
+    user = Users.query.get(current_user.get_id())
+    if form.validate_on_submit():
+        try:
+            user.first_name = form.first_name.data
+            user.last_name = form.last_name.data
+            user.address = form.address.data
+
+            db.session.add(user)
+            db.session.commit()
+
+            return redirect('/profile')
+        except Exception as e:
+            print(f'ERROR WHILE EDITING SETTINGS: {e}')
+            flash('Something went wrong', category='error')
+            db.session.rollback()
+    return render_template('profile_settings.html', title='Settings',
+                           user=user, form=form, getattr=getattr)
+
+
+@app.route('/change/password/step1', methods=['GET'])
+@login_required
+def change_email_1():
+    user = Users.query.get(current_user.get_id())
+    send_mail(subject="Confirmation from Bakery",
+                      recipient=user.email,
+                      template='change_password_mail.html',
+                      name=f'{user.first_name} {user.last_name}',
+                      key=user.access_key, id=user.id)
+    return render_template('password_change_1.html', title='Step 1')
+
+
+@app.route('/change/password/step2/<key>', methods=['GET', 'POST'])
+@login_required
+def method_name(key):
+    form = PasswordChangeForm()
+    user = Users.query.get(current_user.get_id())
+    if user.access_key == key:
+        if form.validate_on_submit():
+            try:
+                user.password = gen_hash(form.password.data)
+
+                db.session.add(user)
+                db.session.commit()
+
+                return redirect('/profile')
+            except Exception as e:
+                print(f'ERROR WHILE CHANGE PASSWORD: {e}')
+                flash('Something went wrong', category='error')
+                db.session.rollback()
+    else:
+        return "Wrong key or id"
+
+    return render_template('password_change_2.html', title='Step 2', form=form,
+                           key=user.access_key)
+
+
+@app.route('/profile/email-change', methods=['GET', 'POST'])
+@login_required
+def email_change():
+    user = Users.query.get(current_user.get_id())
+    form = EmailChangeForm()
+    if form.validate_on_submit():
+        send_mail(subject="Confirmation from Bakery",
+                  recipient=form.email.data,
+                  template='change_email_mail.html',
+                  name=f'{user.first_name} {user.last_name}',
+                  key=user.access_key, id=user.id, email=form.email.data)
+        flash('You have received a confirmation email', category='success')
+    return render_template('email_change.html', title='Change email', form=form)
+
+
+@app.route('/confirm/email/<email>/<key>', methods=['GET'])
+@login_required
+def confirm_email(key, email):
+    user = Users.query.get(current_user.get_id())
+    if user.access_key == key:
+        try:
+            user.email = email
+            db.session.add(user)
+            db.session.commit()
+
+            return redirect('/profile')
+        except Exception as e:
+            print(f'ERROR WHILE CONFIRM EMAIL: {e}')
+            db.session.rollback()
+            return "Something went wrong"
+
+    else:
+        return "Wrong key or id"
+
+
+@app.route('/profile/signout')
+@login_required
+def signout():
+    logout_user()
+    return redirect('/')

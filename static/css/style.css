@@ -126,3 +126,55 @@ p.field_error {
 img.profile_avatar {
     margin: 0px 40px 0px 0px;
 }
+
+a.settings {
+    display: block;
+    margin: 15px 0px;
+    padding: 10px 20px;
+    background-color: #0012A2;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 6px;
+}
+
+a.inline_settings {
+    display: inline-block;
+    padding: 7px 18px;
+    margin: 0px 15px;
+    background-color: #0012A2;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 6px;
+}
+
+input.left_field {
+    width: 40%;
+    height: 35px;
+    font-size: 24px;
+    border-radius: 4px;
+    outline: none;
+    border: 2px solid #2b2b2b;
+}
+
+input.left_submit {
+    display: block;
+    padding: 10px 30px;
+    margin: 18px 0px;
+    font-size: 20px;
+    font-weight: bold;
+    border: 2px solid #777777;
+    border-radius: 4px
+}
+
+a.warning {
+    display: block;
+    padding: 10px 20px;
+    margin: 15px 0px;
+    background-color: #AF1212;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 6px;
+}
