@@ -1,19 +1,26 @@
 from user import User
 from login import manager
 from db import db, migrate, Products, Users
-from forms import RegistrationForm, LoginForm, SettingsForm, \
-    EmailChangeForm, PasswordChangeForm
+from forms import (
+    RegistrationForm, LoginForm, SettingsForm,
+    EmailChangeForm, PasswordChangeForm, SortForm
+)
 from threading import Thread
 from base64 import b64encode
 import os
-from werkzeug.security import check_password_hash as check_hash, \
+from werkzeug.security import (
+    check_password_hash as check_hash,
     generate_password_hash as gen_hash
-from flask_login import login_required, login_user, current_user, \
+)
+from flask_login import (
+    login_required, login_user, current_user,
     logout_user
+)
 from flask_mail import Mail, Message
-from flask import Flask, render_template, send_from_directory, \
+from flask import (
+    Flask, render_template, send_from_directory,
     flash, request, redirect
-
+)
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -43,6 +50,14 @@ def without_login(func):
         return func(*args, **kwargs)
     wrapper.__name__ = func.__name__
     return wrapper
+
+
+def to_sublists(lst: list, item_count: int = 1) -> list:
+    new = []
+    while lst:
+        new.append(lst[:item_count])
+        del lst[:item_count]
+    return new
 
 
 def async_send_mail(app, msg):
@@ -261,3 +276,51 @@ def confirm_email(key, email):
 def signout():
     logout_user()
     return redirect('/')
+
+
+@app.route('/menu', methods=['GET'])
+@login_required
+def menu():
+    form = SortForm(sort=request.args.get('sort'))
+    match request.args.get('sort'):  # Sort products
+        case 'desc_price':
+            products = Products.query.order_by(Products.price.desc()).all()
+        case 'asc_price':
+            products = Products.query.order_by(Products.price).all()
+        case 'popular':
+            products = Products.query.order_by(Products.sales.desc()).all()
+        case 'alphabet':
+            products = Products.query.order_by(Products.name).all()
+        case _:
+            products = Products.query.all()
+
+    rows = to_sublists(products, 3)
+    pages = to_sublists(rows, 4)
+
+    page = request.args.get('page')
+    try:  # Check the page is integer and valid index, else page = 1
+        page = int(page)
+        pages[page-1]
+    except (ValueError, TypeError, IndexError):
+        page = 1
+
+    if page == 1:  # First page
+        nav_pages = [
+            page,
+            page+1 if page+1 <= len(pages) else None,
+            page+2 if page+2 <= len(pages) else None
+        ]
+    if page == len(pages):  # Last page
+        nav_pages = [
+            page-1 if page-1 >= 1 else None,
+            page-2 if page-2 <= 1 else None,
+            page
+        ]
+    else:  # Other pages
+        nav_pages = [
+            page-1, page, page+1
+        ]
+
+    return render_template('menu.html', title='Menu', page=pages[page-1],
+                           form=form, pages_count=len(pages),
+                           nav_pages=nav_pages, current_page=page)

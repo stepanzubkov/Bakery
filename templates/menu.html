@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block head %}
+{{ super() }}
+
+<script src="/static/js/functions.js"></script>
+{% endblock %}
+
+{% block content %}
+{{ super() }}
+
+<div class="menu">
+    <div class="left_column">
+
+    </div>
+    <div>
+        
+        <form action="/menu" method="get" class="sort"> 
+            <h1>Our products</h1>
+            {{ form.sort() }}
+            {{ form.submit() }}
+        </form>
+        <div class="nav_pages">
+            <a onclick="goToPage(1);"><<</a>
+            {% for number in nav_pages if number %}
+                    {% if current_page == number %}
+                        <span>{{number}}</span>
+                    {% else %}
+                        <a onclick="goToPage({{number}});">{{number}}</a>
+                    {% endif %}
+                    
+            {% endfor %}
+            <a onclick="goToPage({{pages_count}});">>></a>
+        </div>
+        <div class="products">
+            {% for row in page %}
+                    <div class="row">
+                        {% for pr in row %}
+                            <div class="full_product">
+                                <img src="{{pr.image_url}}" alt="Product" class="product_image">
+                                <div class="product_info">
+                                    <p><b>{{pr.name}}</b></p>
+                                    <p>{{pr.price}}$</p>
+                                    <p>Sold {{pr.sales}} products</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                    </div>
+            {% endfor %}
+            
+        </div>
+        <div class="nav_pages">
+            <a onclick="goToPage(1);"><<</a>
+            {% for number in nav_pages if number %}
+                    {% if current_page == number %}
+                        <span>{{number}}</span>
+                    {% else %}
+                        <a onclick="goToPage({{number}});">{{number}}</a>
+                    {% endif %}
+                    
+            {% endfor %}
+            <a onclick="goToPage({{pages_count}});">>></a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+

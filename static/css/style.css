@@ -178,3 +178,37 @@ a.warning {
     text-decoration: none;
     border-radius: 6px;
 }
+
+div.row {
+    display: flex;
+}
+
+div.full_product {
+    display: flex;
+    padding: 10px;
+    border: 1px solid black;
+    margin: 10px 0px 10px 30px;
+    width: 300px;
+}
+
+img.product_image {
+    width: 200px;
+    height: 200px;
+}
+
+div.product_info {
+    padding: 0px 10px;
+}
+
+form.sort {
+    padding: 10px 20px;
+}
+
+div.nav_pages a {
+    color: #0012A2;
+    cursor: pointer;
+}
+
+div.nav_pages {
+    text-align: center;
+}

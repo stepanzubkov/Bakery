@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import (BooleanField, EmailField, PasswordField, StringField,
-                     SubmitField)
+                     SubmitField, SelectField)
 from wtforms.validators import DataRequired, Email, Length
 
 
@@ -73,3 +73,15 @@ class PasswordChangeForm(FlaskForm):
         DataRequired()
     ])
     submit = SubmitField('Save password')
+
+
+class SortForm(FlaskForm):
+    sort = SelectField('Sort', choices=[
+        ('', 'Default'),
+        ('popular', 'Popular first'),
+        ('asc_price', 'By ascending price'),
+        ('desc_price', 'By descending price'),
+        ('alphabet', 'By alphabet')
+    ])
+
+    submit = SubmitField('Sort')
