@@ -10,7 +10,17 @@
 
 <div class="menu">
     <div class="left_column">
-
+        <ul>
+            <h3>Last reviews</h3>
+            {% for r in reviews %}
+                <li>
+                    <a href="/products/{{r.product.name}}#reviews"><p>{{r.product.name}} review: </p></a>
+                    <p>{{r.text[:30]}}...</p>
+                    
+                </li>
+            {% endfor %}
+        </ul>
+        
     </div>
     <div>
         
@@ -38,7 +48,7 @@
                             <div class="full_product">
                                 <img src="{{pr.image_url}}" alt="Product" class="product_image">
                                 <div class="product_info">
-                                    <p><b>{{pr.name}}</b></p>
+                                    <a href="/products/{{pr.name}}"><p><b>{{pr.name}}</b></p></a>
                                     <p>{{pr.price}}$</p>
                                     <p>Sold {{pr.sales}} products</p>
                                 </div>

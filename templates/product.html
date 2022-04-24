@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+{{ super() }}
+
+<h1>{{product.name}}</h1>
+
+
+<div class="product_page_main">
+    <div class="image_selecter">
+        <img src="{{product.image_url}}" alt="product" class="big_image">
+    </div>
+    <div>
+        <h3>{{product.price}}$</h3>
+        <p>Sold {{product.sales}} products</p>
+        <p>{{reviews_count}} reviews</p>
+        <p><b>Rating: </b>{{summary_rating}}</p>
+        {% if product.description %}
+            <p>
+                <b>Description: </b>
+                {{product.description}}
+            </p>
+        {% endif %}
+    </div>
+</div>
+<h2 id="reviews">Reviews: </h2>
+{% if reviews_count == 0 %}
+        <p>There are no reviews here...</p>
+{% else %}
+        <hr>
+        {% for r in product.reviews %}
+                <p><b>{{r.owner.first_name + ' ' + r.owner.last_name}}</b></p>
+                <p><b>Rating: </b>{{r.rating}}</p>
+                <p>{{r.text}}</p>
+                {% if r.image_url %}
+                    <img src="{{r.image_url}}" alt="Review image" height="200">
+                {% endif %}
+                
+                <hr>
+        {% endfor %}
+        
+{% endif %}
+
+<a href="/products/{{product.name}}/review" class="settings">Create review</a>
+{% endblock %}
+
+

@@ -19,10 +19,13 @@ class Products(db.Model):
     id = db.Column(db.Integer, primary_key=True,
                    nullable=False, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False)
     sales = db.Column(db.Integer, default=0, nullable=False)
     image_url = db.Column(
-        db.String(50), default='/pictures/notfound.png', nullable=False)
+        db.String(100), default='/pictures/notfound.png', nullable=False)
+    reviews = db.relationship('Reviews', backref='product', lazy='dynamic',
+                              uselist=True)
 
 
 class Users(db.Model):
@@ -35,3 +38,17 @@ class Users(db.Model):
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     address = db.Column(db.String(100))
+    reviews = db.relationship(
+        'Reviews', backref='owner', lazy='dynamic', uselist=True)
+
+
+class Reviews(db.Model):
+    id = db.Column(db.Integer, primary_key=True,
+                   nullable=False, autoincrement=True)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                         nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'),
+                           nullable=False)
+    text = db.Column(db.Text)
+    rating = db.Column(db.Integer, nullable=False)
+    image_url = db.Column(db.String(100))

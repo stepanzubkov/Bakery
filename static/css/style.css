@@ -131,6 +131,7 @@ a.settings {
     display: block;
     margin: 15px 0px;
     padding: 10px 20px;
+    width: 200px;
     background-color: #0012A2;
     color: white;
     text-align: center;
@@ -172,6 +173,7 @@ a.warning {
     display: block;
     padding: 10px 20px;
     margin: 15px 0px;
+    width: 200px;
     background-color: #AF1212;
     color: white;
     text-align: center;
@@ -211,4 +213,42 @@ div.nav_pages a {
 
 div.nav_pages {
     text-align: center;
+}
+
+div.product_page_main {
+    display: flex;
+    padding: 10px 25px;
+}
+
+img.big_image {
+    width: 400px;
+    height: 400px;
+    border-radius: 8px;
+    border: 1px solid black;
+    padding: 6px;
+}
+
+div.image_selecter {
+    padding: 0px 40px 0px 0px;
+}
+
+
+div.rating {
+    font-size: 28px;
+    color: #F2B422;
+    padding: 15px 0px;
+}
+
+span.rating_star {
+    cursor: pointer;
+}
+
+div.menu {
+    display: flex;
+    justify-content: space-between;
+}
+
+div.left_column {
+    width: 250px;
+    box-shadow: 2px 2px 4px black;
 }

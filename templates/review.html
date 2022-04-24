@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+{{ super() }}
+
+<form action="/products/{{product.name}}/review" method="post" enctype="multipart/form-data" class="registration">
+    {% for cat, msg in get_flashed_messages(True) %}
+            <span class="flash_{{cat}}">{{msg}}</span>
+    {% endfor %}
+    
+    <h1 class="form_title">{{product.name}} review</h1>
+    {{ form.csrf_token() }}
+    {% for field in form if field.name not in ['csrf_token', 'submit', 'rating'] %}
+            {% for e in field.errors %}
+                    <p class="field_error">{{ e }}</p>
+            {% endfor %}
+            {{ field.label() }}
+            {% if field.name == 'text' %}
+                {{ field(cols=53, rows=12) }}
+            {% else %}
+            
+                {{ field(class='basic_field') }}
+            {% endif %}
+        
+    {% endfor %}
+    {{ form.rating(type='hidden', class='rating', value='0') }}
+
+    <div class="rating">
+        <span class="rating_star">&#9734;</span>        
+        <span class="rating_star">&#9734;</span>
+        <span class="rating_star">&#9734;</span>
+        <span class="rating_star">&#9734;</span>
+        <span class="rating_star">&#9734;</span>
+        <span class="rating_counter">
+            0
+        </span>
+    </div>
+    {{ form.submit(class='submit') }}
+        
+</form>
+
+{% endblock %}
+
+{% block bodyscript %}
+{{ super() }}
+<script src="/static/js/review.js"></script>
+{% endblock %}
+
+

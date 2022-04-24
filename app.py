@@ -1,17 +1,19 @@
 from user import User
 from login import manager
-from db import db, migrate, Products, Users
+from db import Reviews, db, migrate, Products, Users
 from forms import (
     RegistrationForm, LoginForm, SettingsForm,
-    EmailChangeForm, PasswordChangeForm, SortForm
+    EmailChangeForm, PasswordChangeForm, SortForm,
+    ReviewForm
 )
 from threading import Thread
 from base64 import b64encode
 import os
 from werkzeug.security import (
     check_password_hash as check_hash,
-    generate_password_hash as gen_hash
+    generate_password_hash as gen_hash,
 )
+from werkzeug.utils import secure_filename
 from flask_login import (
     login_required, login_user, current_user,
     logout_user
@@ -22,9 +24,10 @@ from flask import (
     flash, request, redirect
 )
 
-app = Flask(__name__)
+app = Flask(__name__, instance_path='/app')
 app.config.from_pyfile('config.py')
 
+folder = os.path.join(app.instance_path, 'pictures')
 
 mail = Mail(app)
 manager.init_app(app)
@@ -119,7 +122,7 @@ def registration():
                       remeber=form.remember_me.data)
             flash('You have received a confirmation email', category='success')
         except Exception as e:
-            print(f'ERROR WHILE ADDING USER: {e}')
+            app.logger.error(f'ERROR WHILE ADDING USER: {e}')
             flash('Something went wrong', category='error')
             db.session.rollback()
 
@@ -140,7 +143,7 @@ def confirm(id, key):
             login_user(userlogin, remember=eval(request.args.get('remember')))
             return redirect('/profile')
         except Exception as e:
-            print(f'ERROR WHILE CONFIRM EMAIL: {e}')
+            app.logger.error(f'ERROR WHILE CONFIRM EMAIL: {e}')
             db.session.rollback()
             return "Something went wrong"
 
@@ -173,7 +176,8 @@ def login():
 @login_required
 def profile():
     user = Users.query.get(current_user.get_id())
-    return render_template('profile.html', title='Profile', user=user)
+    return render_template('profile.html', title='Profile', user=user,
+                           reviews_count=len(user.reviews.all()))
 
 
 @app.route('/profile/settings', methods=['GET', 'POST'])
@@ -192,7 +196,7 @@ def profile_settings():
 
             return redirect('/profile')
         except Exception as e:
-            print(f'ERROR WHILE EDITING SETTINGS: {e}')
+            app.logger.error(f'ERROR WHILE EDITING SETTINGS: {e}')
             flash('Something went wrong', category='error')
             db.session.rollback()
     return render_template('profile_settings.html', title='Settings',
@@ -226,7 +230,7 @@ def method_name(key):
 
                 return redirect('/profile')
             except Exception as e:
-                print(f'ERROR WHILE CHANGE PASSWORD: {e}')
+                app.logger.error(f'ERROR WHILE CHANGE PASSWORD: {e}')
                 flash('Something went wrong', category='error')
                 db.session.rollback()
     else:
@@ -248,7 +252,8 @@ def email_change():
                   name=f'{user.first_name} {user.last_name}',
                   key=user.access_key, id=user.id, email=form.email.data)
         flash('You have received a confirmation email', category='success')
-    return render_template('email_change.html', title='Change email', form=form)
+    return render_template('email_change.html', title='Change email',
+                           form=form)
 
 
 @app.route('/confirm/email/<email>/<key>', methods=['GET'])
@@ -263,7 +268,7 @@ def confirm_email(key, email):
 
             return redirect('/profile')
         except Exception as e:
-            print(f'ERROR WHILE CONFIRM EMAIL: {e}')
+            app.logger.error(f'ERROR WHILE CONFIRM EMAIL: {e}')
             db.session.rollback()
             return "Something went wrong"
 
@@ -298,11 +303,7 @@ def menu():
     pages = to_sublists(rows, 4)
 
     page = request.args.get('page')
-    try:  # Check the page is integer and valid index, else page = 1
-        page = int(page)
-        pages[page-1]
-    except (ValueError, TypeError, IndexError):
-        page = 1
+    page = int(page) if str(page).isdigit() else 1
 
     if page == 1:  # First page
         nav_pages = [
@@ -321,6 +322,52 @@ def menu():
             page-1, page, page+1
         ]
 
+    reviews = Reviews.query.order_by(Reviews.id.desc()).limit(10).all()
     return render_template('menu.html', title='Menu', page=pages[page-1],
                            form=form, pages_count=len(pages),
-                           nav_pages=nav_pages, current_page=page)
+                           nav_pages=nav_pages, current_page=page,
+                           reviews=reviews)
+
+
+@app.route('/products/<name>', methods=['GET'])
+def product(name):
+    product = Products.query.filter_by(name=name).first_or_404()
+    summary_rating = (
+        sum([r.rating for r in product.reviews]) /
+        len(product.reviews.all())) \
+        if product.reviews.all() \
+        else 0.0
+    summary_rating = round(summary_rating, 1)
+    return render_template('product.html', title=product.name,
+                           reviews_count=len(product.reviews.all()),
+                           product=product, summary_rating=summary_rating)
+
+
+@ app.route('/products/<name>/review', methods=['GET', 'POST'])
+def review(name):
+    product = Products.query.filter_by(name=name).first_or_404()
+    form = ReviewForm()
+    if form.validate_on_submit():
+        try:
+            if form.image.data:
+                filename = secure_filename(form.image.data.filename)
+                form.image.data.save(os.path.join(folder, filename))
+
+            review = Reviews(
+                text=form.text.data,
+                rating=form.rating.data,
+                product_id=product.id,
+                owner_id=current_user.get_id(),
+                image_url='/pictures/'+filename if form.image.data else None
+            )
+
+            db.session.add(review)
+            db.session.commit()
+
+            return redirect(f'/products/{product.name}')
+        except Exception as e:
+            app.logger.error(f'ERROR WHILE CREATE REVIEW: {e}')
+            flash('Something went wrong', category='error')
+            db.session.rollback()
+    return render_template('review.html', title='Review', form=form,
+                           product=product)

@@ -1,7 +1,19 @@
 from flask_wtf import FlaskForm
 from wtforms import (BooleanField, EmailField, PasswordField, StringField,
-                     SubmitField, SelectField)
-from wtforms.validators import DataRequired, Email, Length
+                     SubmitField, SelectField, TextAreaField, FileField)
+from wtforms.validators import DataRequired, Email, Length, ValidationError, StopValidation
+
+
+class Extensions(object):
+    def __init__(self, extensions, message=None):
+        self.extensions = extensions
+        self.message = message
+
+    def __call__(self, form, field):
+        if not field.data:
+            return
+        if field.data.filename.split('.')[1].lower() not in self.extensions:
+            raise ValidationError(self.message)
 
 
 class RegistrationForm(FlaskForm):
@@ -85,3 +97,15 @@ class SortForm(FlaskForm):
     ])
 
     submit = SubmitField('Sort')
+
+
+class ReviewForm(FlaskForm):
+    text = TextAreaField('Text (optional)')
+
+    '''this element will not be shown on the page
+    as we will make our own special element'''
+    image = FileField('Image (optional)', validators=[
+                      Extensions(['png', 'jpg', 'jpeg'],
+                                 'File must be only .png or .jpg file')])
+    rating = StringField('Rating')
+    submit = SubmitField('Create review')
