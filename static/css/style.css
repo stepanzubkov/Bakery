@@ -252,3 +252,24 @@ div.left_column {
     width: 250px;
     box-shadow: 2px 2px 4px black;
 }
+
+div.social_icons img {
+    width: 100px;
+}
+
+
+div.post {
+    width: 800px;
+    border-radius: 6px;
+    border: 1px solid black;
+    padding: 15px;
+    margin: 15px;
+}
+
+div.post img {
+    width: 100%;
+}
+
+div.blog {
+    display: flex;
+}

@@ -17,6 +17,18 @@
         <a href="/profile/signout" class="warning">Sign out</a>
     </div>
 </div>
+<div class="orders">
+    <h2>Orders</h2>
+    <hr>
+    {% for order in user.orders %}
+            <h4>{{ order.product.name }}</h4>
+            <p>{{ order.created_at }}</p>
+            <p>{{ order.wishes }}</p>
+            <p>Status: <b>{{order.status}}</b></p>
+            <hr>
+    {% endfor %}
+    
+</div>
 
 {% endblock %}
 

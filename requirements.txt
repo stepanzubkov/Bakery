@@ -6,3 +6,5 @@ flask-mail
 flask-login
 email-validator
 psycopg2-binary
+requests
+cloudipsp

@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import (BooleanField, EmailField, PasswordField, StringField,
-                     SubmitField, SelectField, TextAreaField, FileField)
+                     SubmitField, SelectField, TextAreaField, FileField, RadioField)
 from wtforms.validators import DataRequired, Email, Length, ValidationError, StopValidation
 
 
@@ -109,3 +109,14 @@ class ReviewForm(FlaskForm):
                                  'File must be only .png or .jpg file')])
     rating = StringField('Rating')
     submit = SubmitField('Create review')
+
+
+class BuyForm(FlaskForm):
+    wishes = TextAreaField('Wishes (optional)')
+    address_choose = RadioField(choices=[
+        ('default', 'Use account address'),
+        ('custom', 'Use custom address')
+    ])
+    address = StringField('Custom address', validators=[
+        Length(min=-1, max=100, message='Incorrect length')])
+    submit = SubmitField('Buy product')

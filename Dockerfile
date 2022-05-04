@@ -4,7 +4,7 @@ RUN mkdir /app
 WORKDIR /app
 COPY . .
 
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r requirements.txt --use-deprecated=backtrack-on-build-failures
 
 ENV FLASK_APP app.py
 ENV FLASK_DEBUG 1

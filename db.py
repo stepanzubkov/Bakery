@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import MetaData
@@ -26,6 +27,8 @@ class Products(db.Model):
         db.String(100), default='/pictures/notfound.png', nullable=False)
     reviews = db.relationship('Reviews', backref='product', lazy='dynamic',
                               uselist=True)
+    orders = db.relationship(
+        'Orders', backref='product', lazy='dynamic', uselist=True)
 
 
 class Users(db.Model):
@@ -40,6 +43,8 @@ class Users(db.Model):
     address = db.Column(db.String(100))
     reviews = db.relationship(
         'Reviews', backref='owner', lazy='dynamic', uselist=True)
+    orders = db.relationship(
+        'Orders', backref='owner', lazy='dynamic', uselist=True)
 
 
 class Reviews(db.Model):
@@ -52,3 +57,16 @@ class Reviews(db.Model):
     text = db.Column(db.Text)
     rating = db.Column(db.Integer, nullable=False)
     image_url = db.Column(db.String(100))
+
+
+class Orders(db.Model):
+    id = db.Column(db.Integer, primary_key=True,
+                   nullable=False, autoincrement=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'),
+                           nullable=False)
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'),
+                         nullable=False)
+    address = db.Column(db.String(100), nullable=False)
+    wishes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow())
+    status = db.Column(db.String(50), default='created')

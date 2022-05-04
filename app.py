@@ -1,14 +1,18 @@
 from user import User
 from login import manager
-from db import Reviews, db, migrate, Products, Users
+from db import Reviews, db, migrate, Products, Users, Orders
 from forms import (
     RegistrationForm, LoginForm, SettingsForm,
     EmailChangeForm, PasswordChangeForm, SortForm,
-    ReviewForm
+    ReviewForm, BuyForm
 )
 from threading import Thread
 from base64 import b64encode
 import os
+from datetime import datetime
+
+from cloudipsp import Api, Checkout
+import requests
 from werkzeug.security import (
     check_password_hash as check_hash,
     generate_password_hash as gen_hash,
@@ -205,7 +209,7 @@ def profile_settings():
 
 @app.route('/change/password/step1', methods=['GET'])
 @login_required
-def change_email_1():
+def change_password_1():
     user = Users.query.get(current_user.get_id())
     send_mail(subject="Confirmation from Bakery",
                       recipient=user.email,
@@ -217,7 +221,7 @@ def change_email_1():
 
 @app.route('/change/password/step2/<key>', methods=['GET', 'POST'])
 @login_required
-def method_name(key):
+def change_password_2(key):
     form = PasswordChangeForm()
     user = Users.query.get(current_user.get_id())
     if user.access_key == key:
@@ -284,7 +288,6 @@ def signout():
 
 
 @app.route('/menu', methods=['GET'])
-@login_required
 def menu():
     form = SortForm(sort=request.args.get('sort'))
     match request.args.get('sort'):  # Sort products
@@ -343,7 +346,50 @@ def product(name):
                            product=product, summary_rating=summary_rating)
 
 
+@app.route('/products/<name>/buy', methods=['GET', 'POST'])
+@login_required
+def product_buy(name):
+    form = BuyForm()
+    product = Products.query.filter_by(name=name).first_or_404()
+    if form.validate_on_submit():
+        try:
+            user = Users.query.get(current_user.get_id())
+            address = form.address.data \
+                if form.address_choose.data == 'custom' \
+                else user.address
+
+            order = Orders(
+                product_id=product.id,
+                owner_id=user.id,
+                address=address,
+                wishes=form.wishes.data,
+            )
+
+            db.session.add(order)
+            db.session.commit()
+
+            api = Api(merchant_id=1396424,
+                      secret_key='test')
+            checkout = Checkout(api=api)
+            data = {
+                "currency": "USD",
+                "amount": int(product.price*100),
+                "response_url": f"http://localhost:5000/order-accept/{order.id}/{user.access_key}"
+            }
+
+            url = checkout.url(data).get('checkout_url')
+            return redirect(url)
+        except Exception as e:
+            app.logger.error(f'ERROR WHILE ADD ORDER: {e}')
+            db.session.rollback()
+            flash("Something went wrong")
+
+    return render_template('buy.html', title='Order', product=product,
+                           form=form)
+
+
 @ app.route('/products/<name>/review', methods=['GET', 'POST'])
+@login_required
 def review(name):
     product = Products.query.filter_by(name=name).first_or_404()
     form = ReviewForm()
@@ -371,3 +417,87 @@ def review(name):
             db.session.rollback()
     return render_template('review.html', title='Review', form=form,
                            product=product)
+
+
+@app.route('/contact', methods=['GET', 'POST'])
+def contact():
+    return render_template('contact.html', title='Contact us')
+
+
+@app.route('/blog', methods=['GET'])
+def blog():
+    '''
+    This page will work without youtube access token,
+    but videos will not be shown.
+    For this feature, create google apis
+    application and create file
+    youtube_token.txt with you access token
+    '''
+    owner_id = '-212903410'  # VK community id
+    access_token = '997587369975873699758736389909ddf59997599758736fb12194e34710227d78e44b9'  # public token
+    vk_posts = requests.get(
+        f"http://api.vk.com/method/wall.get?owner_id={owner_id}&v=5.131&access_token={access_token}&count=10")
+    posts = [
+        {
+            "image": post["attachments"][0]["photo"]["sizes"][6]["url"]
+            if post.get("attachments") else None,
+            "text":
+                post["text"][:200] + ('...' if len(post["text"]) > 150 else '')
+                if post.get('attachments') else
+                post['text'],
+            "link": f"https://vk.com/wall{owner_id}_{post['id']}",
+            "date": datetime.fromtimestamp(int(post['date'])).isoformat()
+        }
+        for post in vk_posts.json()["response"]["items"]
+    ]
+
+    try:
+        with open('youtube_token.txt', 'r') as f:
+            youtube_key = f.read()
+            channel_id = 'UCgnXl05I8AcM-XmnxBvKL3w'
+    except FileNotFoundError:
+        videos = []
+        return render_template('blog.html', title='Blog', posts=posts, videos=videos)
+
+    channel = requests.get(
+        f'https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id={channel_id}&key={youtube_key}').json()
+    playlist_id = channel['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+    playlist = requests.get(
+        f'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&maxResults=20&playlistId={playlist_id}&key={youtube_key}').json()
+
+    videos = [
+        {
+            "name": video['snippet']['title'],
+            "image": video['snippet']['thumbnails']['medium']['url'],
+            "url": f'https://www.youtube.com/watch?v={video["snippet"]["resourceId"]["videoId"]}'
+
+        }
+        for video in playlist['items']
+    ]
+    return render_template('blog.html', title='Blog', posts=posts, videos=videos)
+
+
+@app.route('/about', methods=['GET'])
+def about():
+    return render_template('about.html', title='About us')
+
+
+@app.route('/order-accept/<int:id>/<key>', methods=['GET', 'POST'])
+def order_accept(id, key):
+    order = Orders.query.filter_by(id=id).first_or_404()
+    user = Users.query.filter_by(
+        id=order.owner_id,
+        access_key=key
+    ).first_or_404()
+
+    try:
+        order.status = 'accepted'
+
+        db.session.add(order)
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f'ERROR WHILE ACCEPT ORDER: {e}')
+        db.session.rollback()
+        flash("Something went wrong")
+
+    return redirect('/profile')

@@ -6,3 +6,13 @@ function goToPage(index) {
     }
     
 }
+
+
+function unableField(elem) {
+    address = document.querySelector('[name=address]');
+    if (elem.value === 'custom')
+        address.disabled = '';
+    else 
+        address.disabled = 'disabled';
+        address.value = '';
+}
