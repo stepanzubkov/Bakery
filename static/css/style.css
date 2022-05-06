@@ -245,7 +245,6 @@ span.rating_star {
 
 div.menu {
     display: flex;
-    justify-content: space-between;
 }
 
 div.left_column {

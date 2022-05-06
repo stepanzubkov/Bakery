@@ -8,3 +8,4 @@ email-validator
 psycopg2-binary
 requests
 cloudipsp
+pyjwt

@@ -7,7 +7,6 @@ from forms import (
     ReviewForm, BuyForm
 )
 from threading import Thread
-from base64 import b64encode
 import os
 from datetime import datetime
 
@@ -100,20 +99,20 @@ def uploaded_file(filename):
 def registration():
     form = RegistrationForm()
     if form.validate_on_submit():
-        users_emails = [u.email for u in Users.query.all()]
+        users_emails = [u.email for u in Users.query.all() if u.is_verified]
         if form.email.data in users_emails:
             flash('Account with this email already exists', category='error')
             return render_template('registration.html', title='Registration',
                                    form=form)
         try:
-            access_key = b64encode(os.urandom(50)).decode(
-                'utf-8').replace('/', '')
+
+            access_key = User.generate_access_key(form.email.data)
+
             user = Users(first_name=form.first_name.data,
                          last_name=form.last_name.data,
                          email=form.email.data,
                          password=gen_hash(form.password.data),
-                         address=form.address.data,
-                         access_key=access_key
+                         address=form.address.data
                          )
             db.session.add(user)
             db.session.commit()
@@ -122,8 +121,7 @@ def registration():
                       recipient=form.email.data,
                       template='mail.html',
                       name=f'{form.first_name.data} {form.last_name.data}',
-                      key=access_key, id=user.id,
-                      remeber=form.remember_me.data)
+                      key=access_key)
             flash('You have received a confirmation email', category='success')
         except Exception as e:
             app.logger.error(f'ERROR WHILE ADDING USER: {e}')
@@ -134,17 +132,19 @@ def registration():
                            form=form)
 
 
-@app.route('/confirm/<int:id>/<key>', methods=['GET'])
-def confirm(id, key):
-    user = Users.query.get(id)
-    if user.access_key == key:
+@app.route('/confirm/registration/<key>', methods=['GET'])
+def confirm_registration(key):
+    email = User.check_access_key(key)
+    if email:
         try:
+            user = Users.query.filter_by(email=email).first()
             user.is_verified = True
+
             db.session.add(user)
             db.session.commit()
 
             userlogin = User().create(user)
-            login_user(userlogin, remember=eval(request.args.get('remember')))
+            login_user(userlogin, remember=True)
             return redirect('/profile')
         except Exception as e:
             app.logger.error(f'ERROR WHILE CONFIRM EMAIL: {e}')
@@ -152,7 +152,7 @@ def confirm(id, key):
             return "Something went wrong"
 
     else:
-        return "Wrong key or id"
+        return "Wrong key or key is expired"
 
 
 @app.route('/login', methods=['GET', 'POST'])
