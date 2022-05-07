@@ -1,13 +1,16 @@
 {% extends 'base.html' %}
 {% block content %}
 {{ super() }}
-<form action="/profile/email-change" method="post" class="registration">
+<form action="/change-email" method="post" class="registration">
     {% for cat, msg in get_flashed_messages(True) %}
             <span class="flash_{{cat}}">{{msg}}</span>
     {% endfor %}
     
     <h1 class="form_title">Change account email</h1>
     {{ form.csrf_token() }}
+    {% for e in form.email.errors %}
+        <p class="field_error">{{ e }}</p>
+    {% endfor %}
     {{ form.email.label() }}
     {{ form.email(class='basic_field') }}
     {{ form.submit(class='submit') }}

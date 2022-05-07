@@ -3,8 +3,8 @@
 {{ super() }}
 <form action="/profile/settings" method="post" class="profile_settings">
     <h1 class="form_title">Profile settings</h1>
-    <p>Email: {{user.email}} <a href="/profile/email-change" class="inline_settings">Change</a></p>
-    <p>Password <a href="/change/password/step1" class="inline_settings">Change</a></p>
+    <p>Email: {{user.email}} <a href="/change-email" class="inline_settings">Change</a></p>
+    <p>Password <a href="/change-password" class="inline_settings">Change</a></p>
     {{ form.csrf_token() }}
     {% for field in form if field.name not in ['csrf_token', 'submit'] %}
             {% for e in field.errors %}

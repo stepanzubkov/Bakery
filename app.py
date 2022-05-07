@@ -1,11 +1,12 @@
 from user import User
 from login import manager
-from db import Reviews, db, migrate, Products, Users, Orders
 from forms import (
     RegistrationForm, LoginForm, SettingsForm,
     EmailChangeForm, PasswordChangeForm, SortForm,
     ReviewForm, BuyForm
 )
+from db import Reviews, db, migrate, Products, Users, Orders
+
 from threading import Thread
 import os
 from datetime import datetime
@@ -26,6 +27,8 @@ from flask import (
     Flask, render_template, send_from_directory,
     flash, request, redirect
 )
+from wtforms.validators import NoneOf
+
 
 app = Flask(__name__, instance_path='/app')
 app.config.from_pyfile('config.py')
@@ -98,12 +101,13 @@ def uploaded_file(filename):
 @without_login
 def registration():
     form = RegistrationForm()
+    form.email.validators.append(
+        NoneOf(
+            [u.email for u in Users.query.filter_by(is_verified=True)],
+            message='Account with this email already exists'
+        )
+    )
     if form.validate_on_submit():
-        users_emails = [u.email for u in Users.query.all() if u.is_verified]
-        if form.email.data in users_emails:
-            flash('Account with this email already exists', category='error')
-            return render_template('registration.html', title='Registration',
-                                   form=form)
         try:
 
             access_key = User.generate_access_key(form.email.data)
@@ -207,24 +211,26 @@ def profile_settings():
                            user=user, form=form, getattr=getattr)
 
 
-@app.route('/change/password/step1', methods=['GET'])
+@app.route('/change-password', methods=['GET'])
 @login_required
 def change_password_1():
     user = Users.query.get(current_user.get_id())
+    access_key = User.generate_access_key(user.email)
     send_mail(subject="Confirmation from Bakery",
                       recipient=user.email,
                       template='change_password_mail.html',
                       name=f'{user.first_name} {user.last_name}',
-                      key=user.access_key, id=user.id)
+                      key=access_key, id=user.id)
     return render_template('password_change_1.html', title='Step 1')
 
 
-@app.route('/change/password/step2/<key>', methods=['GET', 'POST'])
+@app.route('/confirm/change-password/<key>', methods=['GET', 'POST'])
 @login_required
 def change_password_2(key):
     form = PasswordChangeForm()
     user = Users.query.get(current_user.get_id())
-    if user.access_key == key:
+    email = User.check_access_key(key)
+    if email:
         if form.validate_on_submit():
             try:
                 user.password = gen_hash(form.password.data)
@@ -238,35 +244,44 @@ def change_password_2(key):
                 flash('Something went wrong', category='error')
                 db.session.rollback()
     else:
-        return "Wrong key or id"
+        return "Wrong key or key expired"
 
     return render_template('password_change_2.html', title='Step 2', form=form,
-                           key=user.access_key)
+                           key=key)
 
 
-@app.route('/profile/email-change', methods=['GET', 'POST'])
+@app.route('/change-email', methods=['GET', 'POST'])
 @login_required
 def email_change():
-    user = Users.query.get(current_user.get_id())
     form = EmailChangeForm()
+    form.email.validators.append(
+        NoneOf(
+            [u.email for u in Users.query.filter_by(is_verified=True)],
+            message='Account with this email already exists'
+        )
+    )
     if form.validate_on_submit():
+        user = Users.query.get(current_user.get_id())
+        access_key = User.generate_access_key(form.email.data)
         send_mail(subject="Confirmation from Bakery",
                   recipient=form.email.data,
                   template='change_email_mail.html',
                   name=f'{user.first_name} {user.last_name}',
-                  key=user.access_key, id=user.id, email=form.email.data)
+                  key=access_key, id=user.id)
         flash('You have received a confirmation email', category='success')
     return render_template('email_change.html', title='Change email',
                            form=form)
 
 
-@app.route('/confirm/email/<email>/<key>', methods=['GET'])
+@app.route('/confirm/change-email/<key>', methods=['GET'])
 @login_required
-def confirm_email(key, email):
+def confirm_email(key):
     user = Users.query.get(current_user.get_id())
-    if user.access_key == key:
+    email = User.check_access_key(key)
+    if email:
         try:
             user.email = email
+
             db.session.add(user)
             db.session.commit()
 
@@ -368,13 +383,15 @@ def product_buy(name):
             db.session.add(order)
             db.session.commit()
 
+            access_key = User.generate_access_key(user.email)
+
             api = Api(merchant_id=1396424,
                       secret_key='test')
             checkout = Checkout(api=api)
             data = {
                 "currency": "USD",
                 "amount": int(product.price*100),
-                "response_url": f"http://localhost:5000/order-accept/{order.id}/{user.access_key}"
+                "response_url": f"http://localhost:5000/accept-order/{order.id}/{access_key}"
             }
 
             url = checkout.url(data).get('checkout_url')
@@ -482,16 +499,18 @@ def about():
     return render_template('about.html', title='About us')
 
 
-@app.route('/order-accept/<int:id>/<key>', methods=['GET', 'POST'])
+@app.route('/accept-order/<int:id>/<key>', methods=['GET', 'POST'])
 def order_accept(id, key):
     order = Orders.query.filter_by(id=id).first_or_404()
+    email = User.check_access_key(key)
     user = Users.query.filter_by(
         id=order.owner_id,
-        access_key=key
+        email=str(email)
     ).first_or_404()
 
     try:
         order.status = 'accepted'
+        order.product.sales += 1
 
         db.session.add(order)
         db.session.commit()

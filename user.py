@@ -1,6 +1,5 @@
 from flask_login import UserMixin
 from flask import current_app
-from db import Users
 from time import time
 import jwt
 
@@ -21,14 +20,33 @@ class User(UserMixin):
             return 0
 
     @staticmethod
-    def generate_access_key(email, expires=600) -> str:
+    def generate_access_key(email: str, expires: int = 600) -> str:
+        """Generate access key to send it to user's email
+
+        Args:
+            email (str): email, used to encode
+            expires (int, optional): Key expiration date
+                                     from now in seconds. Defaults to 600.
+
+        Returns:
+            str: Access key
+        """
         return jwt.encode(
             {"access_email": email, "exp": time() + expires},
             current_app.config['SECRET_KEY'], algorithm='HS256'
         )
 
     @staticmethod
-    def check_access_key(key) -> bool | str:
+    def check_access_key(key: str) -> bool | str:
+        """Check access key
+
+        Args:
+            key (str): Access key to check
+
+        Returns:
+            bool | str: email, if access key is valid,
+                        else False
+        """
         try:
             email = jwt.decode(key, current_app.config['SECRET_KEY'],
                                algorithms=['HS256'])['access_email']

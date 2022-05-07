@@ -1,7 +1,11 @@
 from flask_wtf import FlaskForm
 from wtforms import (BooleanField, EmailField, PasswordField, StringField,
-                     SubmitField, SelectField, TextAreaField, FileField, RadioField)
-from wtforms.validators import DataRequired, Email, Length, ValidationError, StopValidation
+                     SubmitField, SelectField, TextAreaField, FileField,
+                     RadioField)
+from wtforms.validators import (DataRequired, Email, Length, ValidationError,
+                                NoneOf)
+
+from db import Users
 
 
 class Extensions(object):
@@ -35,7 +39,7 @@ class RegistrationForm(FlaskForm):
         DataRequired()
     ])
     address = StringField('Address', validators=[
-        Length(min=-1, max=100, message='Incorrect length'),
+        Length(min=0, max=100, message='Incorrect length'),
     ])
     remember_me = BooleanField('Remember me')
     submit = SubmitField('Create account')
