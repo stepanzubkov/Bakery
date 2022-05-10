@@ -18,6 +18,10 @@ If you want insert into db test data, you must run this command:
 docker-compose exec -w /app app 'python test_data.py'
 ```
 
+Blog page will show youtube videos from channel only when you spicify the access token.
+You should create file 'youtube_token.txt' and place youtube access key into this file.
+See https://console.cloud.google.com/ to do this.
+
 ## Migrations
 
 For editing DB tables on python, i use migrations with flask-migrate. You can easy create your own DB's versions.

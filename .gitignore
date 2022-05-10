@@ -277,3 +277,4 @@ cython_debug/
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,python,flask
 youtube_token.txt
+todo_list.txt

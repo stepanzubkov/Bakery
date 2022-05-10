@@ -11,3 +11,4 @@ MAIL_USE_TLS = True
 MAIL_USERNAME = 'carlsbad.bakery@gmail.com'
 MAIL_DEFAULT_SENDER = ('Carlsbad Bakery', 'carlsbad.bakery@gmail.com')
 MAIL_PASSWORD = 'bakery_carlsbad'
+API_PASS = 'X+0080CSWvqaf4csZI0vtbbMk1E='

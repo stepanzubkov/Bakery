@@ -1,5 +1,6 @@
 from flask_login import UserMixin
 from flask import current_app
+
 from time import time
 import jwt
 
@@ -50,6 +51,6 @@ class User(UserMixin):
         try:
             email = jwt.decode(key, current_app.config['SECRET_KEY'],
                                algorithms=['HS256'])['access_email']
-        except:
+        except Exception:
             return False
         return email

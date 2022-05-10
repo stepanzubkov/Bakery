@@ -69,3 +69,11 @@ class Orders(db.Model):
     wishes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow())
     status = db.Column(db.String(50), default='created')
+
+    @property
+    def created(self):
+        return str(self.created_at)[:19]
+
+    @created.setter
+    def created(self, value):
+        self.created_at = value

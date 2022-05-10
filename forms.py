@@ -1,14 +1,20 @@
 from flask_wtf import FlaskForm
-from wtforms import (BooleanField, EmailField, PasswordField, StringField,
-                     SubmitField, SelectField, TextAreaField, FileField,
-                     RadioField)
-from wtforms.validators import (DataRequired, Email, Length, ValidationError,
-                                NoneOf)
+from wtforms import (
+    BooleanField, EmailField, PasswordField, StringField,
+    SubmitField, SelectField, TextAreaField, FileField,
+    RadioField
+)
+from wtforms.validators import DataRequired, Email, Length, ValidationError
 
-from db import Users
+import os
 
 
 class Extensions(object):
+    """
+    Validator that took list with exceptions
+    and check if the file extension is in it list
+    """
+
     def __init__(self, extensions, message=None):
         self.extensions = extensions
         self.message = message
@@ -16,7 +22,8 @@ class Extensions(object):
     def __call__(self, form, field):
         if not field.data:
             return
-        if field.data.filename.split('.')[1].lower() not in self.extensions:
+        _, ext = os.path.splitext(field.data.filename.lower())
+        if ext[1:] not in self.extensions:
             raise ValidationError(self.message)
 
 

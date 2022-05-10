@@ -19,15 +19,35 @@
 </div>
 <div class="orders">
     <h2>Orders</h2>
-    <hr>
-    {% for order in user.orders %}
+    {% if user.orders[0] %}
+        {% for order in user.orders %}
+            <hr>
             <h4>{{ order.product.name }}</h4>
-            <p>{{ order.created_at }}</p>
+            <p>{{ order.created }}</p>
             <p>{{ order.wishes }}</p>
             <p>Status: <b>{{order.status}}</b></p>
-            <hr>
-    {% endfor %}
     
+        {% endfor %}            
+    {% else %}
+        <p>You haven't created orders yet...</p>
+    {% endif %}
+
+    <h2>Reviews</h2>
+    {% if user.reviews[0] %}
+        {% for r in user.reviews %}
+            <hr>
+            <p><b>{{r.product.name}}</b></p>
+            <p><b>Rating: </b>{{r.rating}}</p>
+            <p>{{r.text}}</p>
+            {% if r.image_url %}
+                <img src="{{r.image_url}}" alt="Review image" height="200">
+            {% endif %}
+    
+        {% endfor %}
+    {% else %}
+        <p>You haven't created reviews yet...</p>
+    {% endif %}
+
 </div>
 
 {% endblock %}
