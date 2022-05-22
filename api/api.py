@@ -6,7 +6,7 @@ from typing import Optional, Dict
 from pydantic import BaseModel, ValidationError, Extra, constr
 from werkzeug.utils import secure_filename
 
-from db.db import Products, db
+from db.db import Products, Reviews, Orders, db
 
 
 api = Blueprint("api", __name__)
@@ -122,7 +122,7 @@ def products():
                 _links=dict(
                     self=dict(
                         href=(request.root_url +
-                              f'/v1/products/{product.name}')
+                              f'api/v1/products/{product.name}')
                     ),
                     reviews=dict(
                         href=(request.url_root +
@@ -218,7 +218,7 @@ def products():
             _links=dict(
                 self=dict(
                     href=(request.root_url +
-                          f'/v1/products/{product.name}')
+                          f'api/v1/products/{product.name}')
                 ),
                 reviews=dict(
                     href=(request.url_root +
@@ -242,3 +242,63 @@ def products():
             item.description = description
 
         return jsonify(item.dict())
+
+
+@api.route('/products/<name>', methods=['GET', 'DELETE'])
+def single_product(name):
+    product = Products.query.filter_by(name=name).first_or_404()
+    if request.method == 'GET':
+        item = ProductModel(
+            name=product.name,
+            price=product.price,
+            sales=product.sales,
+            _links=dict(
+                self=dict(
+                    href=(request.root_url +
+                          f'api/v1/products/{product.name}')
+                ),
+                reviews=dict(
+                    href=(request.url_root +
+                          f'api/v1/products/{product.name}/reviews')
+                ),
+                orders=dict(
+                    href=(request.url_root +
+                          f'api/v1/products/{product.name}/reviews')
+                )
+            ),
+            _embedded=dict(
+                image=dict(
+                    _links=dict(
+                        self=(request.root_url +
+                              product.image_url[1:])
+                    )
+                )
+            )
+        )
+        if product.description:
+            item.description = product.description
+        return jsonify(item.dict())
+
+    elif request.method == 'DELETE':
+        try:
+            reviews = Reviews.query.filter_by(product_id=product.id).all()
+            orders = Orders.query.filter_by(product_id=product.id).all()
+            for obj in [*reviews, *orders]:
+                db.session.delete(obj)
+            db.session.delete(product)
+            db.session.commit()
+        except Exception as e:
+            current_app.logger.error(f'ERROR WHILE DELETE PRODUCT BY API: {e}')
+
+            db.session.rollback()
+            return jsonify([
+                ErrorModel(
+                    source='server',
+                    type='server_error.database',
+                    description='Error with the database.'
+                ).dict()
+            ])
+
+        return jsonify(
+            status='Successfuly'
+        )
