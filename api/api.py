@@ -18,6 +18,12 @@ class PostProductRequest(BaseModel):
     price: float
 
 
+class ErrorModel(BaseModel):
+    source: str
+    type: str
+    description: str
+
+
 class ProductModel(BaseModel):
     name: constr(max_length=100)
     price: float
@@ -70,12 +76,18 @@ def check_jwt(token: str) -> bool:
 def before_request():
     if not check_jwt(request.headers.get('Authorization', '')
                      .replace('Bearer ', '')):
-        return jsonify([{
-            'source': 'token',
-            'type': 'value_error.missing',
-            'message': ('value is not '
-                        'specified, expired or contains wrong data'),
-        }]), 403
+        return jsonify([
+            ErrorModel(
+                source='token',
+                type='value_error.missing',
+                message=('value is not '
+                         'specified, expired or contains wrong data')
+            ).dict()
+        ])
+
+
+def new_func():
+    return 'source'
 
 
 @api.route('/products', methods=['GET', 'POST'])
@@ -83,6 +95,7 @@ def products():
     if request.method == 'GET':
         sort_type = request.args.get('sort', '')
 
+        # Match/case was replaced to support older python versions
         if sort_type == 'desc_price':
             products = Products.query.order_by(Products.price.desc()).all()
         elif sort_type == 'asc_price':
@@ -94,6 +107,7 @@ def products():
         else:
             products = Products.query.all()
 
+        # Limit borders
         start = (int(request.args.get('start', ''))
                  if request.args.get('start', '').isdigit() else 1)
         end = (int(request.args.get('end', ''))
@@ -144,23 +158,28 @@ def products():
         except ValidationError as errors:
             errors = errors.errors()
             for e in errors:
-                custom_errors.append({
-                    'source': e['loc'][0],
-                    'type': e['type'],
-                    'description': e['msg']
-                })
+                custom_errors.append(
+                    ErrorModel(
+                        source=e['loc'][0],
+                        type=e['type'],
+                        description=e['msg']
+                    ).dict()
+                )
 
+        # If user specified image field, but not load file
         image = request.files.get('image')
         if image and not image.filename:
             image = None
 
         elif image and not is_allowed(image.filename):
-            custom_errors.append({
-                'source': 'image',
-                'type': 'type_error.image',
-                'description': ('extension is not allowed.'
-                                ' Please upload only .png or .jpg files.')
-            })
+            custom_errors.append(
+                ErrorModel(
+                    source='image',
+                    type='type_error.image',
+                    description=('extension is not allowed.'
+                                 ' Please upload only .png or .jpg files.')
+                ).dict()
+            )
 
         if custom_errors:
             return jsonify(custom_errors)
@@ -184,9 +203,13 @@ def products():
             current_app.logger.error(f'ERROR WHILE ADDING PRODUCT BY API: {e}')
 
             db.session.rollback()
-            return jsonify(source='server',
-                           type='SERVER_ERROR',
-                           description='Error with the database.')
+            return jsonify([
+                ErrorModel(
+                    source='server',
+                    type='server_error.database',
+                    description='Error with the database.'
+                ).dict()
+            ])
 
         item = ProductModel(
             name=product.name,
