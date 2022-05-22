@@ -210,8 +210,10 @@ def login():
 @login_required
 def profile():
     user = Users.query.get(current_user.get_id())
+    orders = user.orders.order_by(Orders.created_at.desc())
     return render_template('profile.html', title='Profile', user=user,
-                           reviews_count=len(user.reviews.all()))
+                           reviews_count=len(user.reviews.all()),
+                           orders=orders)
 
 
 @app.route('/profile/settings', methods=['GET', 'POST'])
@@ -358,8 +360,8 @@ def menu():
         ]
     elif page == len(pages):
         nav_pages = [
-            page-1 if page-1 >= 1 else None,
             page-2 if page-2 <= 1 else None,
+            page-1 if page-1 >= 1 else None,
             page
         ]
     else:

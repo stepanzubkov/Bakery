@@ -20,7 +20,7 @@
 <div class="orders">
     <h2>Orders</h2>
     {% if user.orders[0] %}
-        {% for order in user.orders %}
+        {% for order in orders %}
             <hr>
             <h4>{{ order.product.name }}</h4>
             <p>{{ order.created }}</p>

@@ -4,6 +4,7 @@ flask-migrate
 flask-wtf
 flask-mail
 flask-login
+pydantic
 email-validator
 psycopg2-binary
 requests
