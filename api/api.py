@@ -1,58 +1,25 @@
 from flask import current_app, request, jsonify, Blueprint
 
-import jwt
 import os
 from pydantic import ValidationError
 from werkzeug.utils import secure_filename
 
 from db.db import Products, Reviews, Orders, db
-from models import (ProductModel, ErrorModel,
-                    PostProductRequest, PutProductRequest)
+from .tools import check_jwt, check_image
+from .models import (ProductModel, ErrorModel,
+                     PostProductRequest, PutProductRequest)
 
 
 api = Blueprint("api", __name__)
 
 
-def is_allowed(filename: str) -> bool:
-    """Check image extension and return boolean
-
-    Args:
-        filename (str): name of file
-
-    Returns:
-        bool: filename is valid image (png or jpg)
-    """
-    _, ext = os.path.splitext(filename.lower())
-    if ext[1:] in ['png', 'jpg']:
-        return True
-    return False
-
-
-def check_jwt(token: str) -> bool:
-    """Check jwt token and return boolean
-
-    Args:
-        token (str): token to check
-    Returns:
-        bool: token is valid
-    """
-    try:
-        data = jwt.decode(
-            token, current_app.config['SECRET_KEY'],
-            algorithms=['HS256']
-        )
-
-        assert data['password'] == current_app.config['API_PASS']
-
-    except Exception:
-        return False
-    return True
-
-
 @api.before_request
 def before_request():
     if not check_jwt(request.headers.get('Authorization', '')
-                     .replace('Bearer ', '')):
+                     .replace('Bearer ', ''),
+                     current_app.config['SECRET_KEY'],
+                     current_app.config['API_PASS']
+                     ):
         return jsonify([
             ErrorModel(
                 source='token',
@@ -141,18 +108,12 @@ def products():
 
         # If user specified image field, but not load file
         image = request.files.get('image')
+
         if image and not image.filename:
             image = None
 
-        elif image and not is_allowed(image.filename):
-            custom_errors.append(
-                ErrorModel(
-                    source='image',
-                    type='type_error.image',
-                    description=('extension is not allowed.'
-                                 ' Please upload only .png or .jpg files.')
-                ).dict()
-            )
+        image_error = check_image(image)
+        image_error and custom_errors.append(image_error)
 
         if custom_errors:
             return jsonify(custom_errors)
@@ -254,11 +215,10 @@ def single_product(name):
 
     elif request.method == 'DELETE':
         try:
-            reviews = Reviews.query.filter_by(product_id=product.id).all()
-            orders = Orders.query.filter_by(product_id=product.id).all()
-            for obj in [*reviews, *orders]:
-                db.session.delete(obj)
-            db.session.delete(product)
+            Reviews.query.filter_by(
+                product_id=product.id).delete(synchronize_session=False)
+            Orders.query.filter_by(
+                product_id=product.id).delete(synchronize_session=False)
             db.session.commit()
         except Exception as e:
             current_app.logger.error(f'ERROR WHILE DELETE PRODUCT BY API: {e}')
@@ -297,15 +257,8 @@ def single_product(name):
         if image and not image.filename:
             image = None
 
-        elif image and not is_allowed(image.filename):
-            custom_errors.append(
-                ErrorModel(
-                    source='image',
-                    type='type_error.image',
-                    description=('extension is not allowed.'
-                                 ' Please upload only .png or .jpg files.')
-                ).dict()
-            )
+        image_error = check_image(image)
+        image_error and custom_errors.append(image_error)
 
         if custom_errors:
             return jsonify(custom_errors)
