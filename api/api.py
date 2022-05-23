@@ -2,38 +2,15 @@ from flask import current_app, request, jsonify, Blueprint
 
 import jwt
 import os
-from typing import Optional, Dict
-from pydantic import BaseModel, ValidationError, Extra, constr
+from pydantic import ValidationError
 from werkzeug.utils import secure_filename
 
 from db.db import Products, Reviews, Orders, db
+from models import (ProductModel, ErrorModel,
+                    PostProductRequest, PutProductRequest)
 
 
 api = Blueprint("api", __name__)
-
-
-class PostProductRequest(BaseModel):
-    name: constr(max_length=100)
-    description: Optional[str]
-    price: float
-
-
-class ErrorModel(BaseModel):
-    source: str
-    type: str
-    description: str
-
-
-class ProductModel(BaseModel):
-    name: constr(max_length=100)
-    price: float
-    sales: int
-    description: Optional[str]
-    _links: Dict[str, Dict[str, str]]
-    _embedded: Dict[str, Dict[str, Dict[str, str]]]
-
-    class Config:
-        extra = Extra.allow
 
 
 def is_allowed(filename: str) -> bool:
@@ -84,10 +61,6 @@ def before_request():
                          'specified, expired or contains wrong data')
             ).dict()
         ])
-
-
-def new_func():
-    return 'source'
 
 
 @api.route('/products', methods=['GET', 'POST'])
@@ -244,7 +217,7 @@ def products():
         return jsonify(item.dict())
 
 
-@api.route('/products/<name>', methods=['GET', 'DELETE'])
+@api.route('/products/<name>', methods=['GET', 'DELETE', 'PUT'])
 def single_product(name):
     product = Products.query.filter_by(name=name).first_or_404()
     if request.method == 'GET':
@@ -302,3 +275,96 @@ def single_product(name):
         return jsonify(
             status='Successfuly'
         )
+
+    elif request.method == 'PUT':
+        custom_errors = []
+
+        try:
+            prod = PutProductRequest(**request.form)
+        except ValidationError as errors:
+            errors = errors.errors()
+            for e in errors:
+                custom_errors.append(
+                    ErrorModel(
+                        source=e['loc'][0],
+                        type=e['type'],
+                        description=e['msg']
+                    ).dict()
+                )
+
+        # If user specified image field, but not load file
+        image = request.files.get('image')
+        if image and not image.filename:
+            image = None
+
+        elif image and not is_allowed(image.filename):
+            custom_errors.append(
+                ErrorModel(
+                    source='image',
+                    type='type_error.image',
+                    description=('extension is not allowed.'
+                                 ' Please upload only .png or .jpg files.')
+                ).dict()
+            )
+
+        if custom_errors:
+            return jsonify(custom_errors)
+
+        try:
+            for k, v in prod:
+                if v:
+                    setattr(product, k, v)
+
+            if image:
+                old_image_url = product.image_url
+                filename = secure_filename(image.filename)
+                pictures = os.path.join(current_app.instance_path, 'pictures')
+                image.save(os.path.join(pictures, filename))
+                product.image_url = f'/pictures/{filename}'
+                os.remove(current_app.instance_path + old_image_url)
+
+            db.session.add(product)
+            db.session.commit()
+
+        except Exception as e:
+            current_app.logger.error(f'ERROR WHILE UPDATE PRODUCT BY API: {e}')
+
+            db.session.rollback()
+            return jsonify([
+                ErrorModel(
+                    source='server',
+                    type='server_error.database',
+                    description='Error with the database.'
+                ).dict()
+            ])
+
+        item = ProductModel(
+            name=product.name,
+            price=product.price,
+            sales=product.sales,
+            _links=dict(
+                self=dict(
+                    href=(request.root_url +
+                          f'api/v1/products/{product.name}')
+                ),
+                reviews=dict(
+                    href=(request.url_root +
+                          f'api/v1/products/{product.name}/reviews')
+                ),
+                orders=dict(
+                    href=(request.url_root +
+                          f'api/v1/products/{product.name}/reviews')
+                )
+            ),
+            _embedded=dict(
+                image=dict(
+                    _links=dict(
+                        self=(request.root_url +
+                              product.image_url[1:])
+                    )
+                )
+            )
+        )
+        if product.description:
+            item.description = product.description
+        return jsonify(item.dict())
