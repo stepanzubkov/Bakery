@@ -24,7 +24,7 @@ class Products(db.Model):
     price = db.Column(db.Float, nullable=False)
     sales = db.Column(db.Integer, default=0, nullable=False)
     image_url = db.Column(
-        db.String(100), default='/pictures/notfound.png', nullable=False)
+        db.String(100), default='/static/images/notfound.png', nullable=False)
     reviews = db.relationship('Reviews', backref='product', lazy='dynamic',
                               uselist=True)
     orders = db.relationship(

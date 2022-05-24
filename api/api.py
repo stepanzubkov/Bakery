@@ -181,6 +181,7 @@ def products():
 @api.route('/products/<name>', methods=['GET', 'DELETE', 'PUT'])
 def single_product(name):
     product = Products.query.filter_by(name=name).first_or_404()
+
     if request.method == 'GET':
         item = ProductModel(
             name=product.name,
@@ -219,6 +220,7 @@ def single_product(name):
                 product_id=product.id).delete(synchronize_session=False)
             Orders.query.filter_by(
                 product_id=product.id).delete(synchronize_session=False)
+            db.session.delete(product)
             db.session.commit()
         except Exception as e:
             current_app.logger.error(f'ERROR WHILE DELETE PRODUCT BY API: {e}')
@@ -274,7 +276,8 @@ def single_product(name):
                 pictures = os.path.join(current_app.instance_path, 'pictures')
                 image.save(os.path.join(pictures, filename))
                 product.image_url = f'/pictures/{filename}'
-                os.remove(current_app.instance_path + old_image_url)
+                ('/static/images/notfound.png' != old_image_url
+                 and os.remove(current_app.instance_path + old_image_url))
 
             db.session.add(product)
             db.session.commit()
