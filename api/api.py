@@ -55,36 +55,7 @@ def products():
 
         items = []
         for product in products[start-1:end]:
-            item = ProductModel(
-                name=product.name,
-                price=product.price,
-                sales=product.sales,
-                _links=dict(
-                    self=dict(
-                        href=(request.root_url +
-                              f'api/v1/products/{product.name}')
-                    ),
-                    reviews=dict(
-                        href=(request.url_root +
-                              f'api/v1/products/{product.name}/reviews')
-                    ),
-                    orders=dict(
-                        href=(request.url_root +
-                              f'api/v1/products/{product.name}/reviews')
-                    )
-                ),
-                _embedded=dict(
-                    image=dict(
-                        _links=dict(
-                            self=(request.root_url +
-                                  product.image_url[1:])
-                        )
-                    )
-                )
-            )
-            if product.description:
-                item.description = product.description
-
+            item = ProductModel.create(product, request)
             items.append(item.dict())
 
         return jsonify(total=len(products),
@@ -145,35 +116,7 @@ def products():
                 ).dict()
             ])
 
-        item = ProductModel(
-            name=product.name,
-            price=product.price,
-            sales=product.sales,
-            _links=dict(
-                self=dict(
-                    href=(request.root_url +
-                          f'api/v1/products/{product.name}')
-                ),
-                reviews=dict(
-                    href=(request.url_root +
-                          f'api/v1/products/{product.name}/reviews')
-                ),
-                orders=dict(
-                    href=(request.url_root +
-                          f'api/v1/products/{product.name}/reviews')
-                )
-            ),
-            _embedded=dict(
-                image=dict(
-                    _links=dict(
-                        self=(request.root_url +
-                              product.image_url[1:])
-                    )
-                )
-            )
-        )
-        if description:
-            item.description = description
+        item = ProductModel(product, request)
 
         return jsonify(item.dict())
 
@@ -183,35 +126,7 @@ def single_product(name):
     product = Products.query.filter_by(name=name).first_or_404()
 
     if request.method == 'GET':
-        item = ProductModel(
-            name=product.name,
-            price=product.price,
-            sales=product.sales,
-            _links=dict(
-                self=dict(
-                    href=(request.root_url +
-                          f'api/v1/products/{product.name}')
-                ),
-                reviews=dict(
-                    href=(request.url_root +
-                          f'api/v1/products/{product.name}/reviews')
-                ),
-                orders=dict(
-                    href=(request.url_root +
-                          f'api/v1/products/{product.name}/reviews')
-                )
-            ),
-            _embedded=dict(
-                image=dict(
-                    _links=dict(
-                        self=(request.root_url +
-                              product.image_url[1:])
-                    )
-                )
-            )
-        )
-        if product.description:
-            item.description = product.description
+        item = ProductModel.create(product, request)
         return jsonify(item.dict())
 
     elif request.method == 'DELETE':
@@ -294,33 +209,5 @@ def single_product(name):
                 ).dict()
             ])
 
-        item = ProductModel(
-            name=product.name,
-            price=product.price,
-            sales=product.sales,
-            _links=dict(
-                self=dict(
-                    href=(request.root_url +
-                          f'api/v1/products/{product.name}')
-                ),
-                reviews=dict(
-                    href=(request.url_root +
-                          f'api/v1/products/{product.name}/reviews')
-                ),
-                orders=dict(
-                    href=(request.url_root +
-                          f'api/v1/products/{product.name}/reviews')
-                )
-            ),
-            _embedded=dict(
-                image=dict(
-                    _links=dict(
-                        self=(request.root_url +
-                              product.image_url[1:])
-                    )
-                )
-            )
-        )
-        if product.description:
-            item.description = product.description
+        item = ProductModel.create(product, request)
         return jsonify(item.dict())
