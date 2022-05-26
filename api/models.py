@@ -76,3 +76,13 @@ class ProductModel(BaseModel):
             item.description = product.description
 
         return item
+
+
+class ReviewModel(BaseModel):
+    text: Optional[str]
+    rating: int
+    _links: Dict[str, Dict[str, str]]
+    _embedded: Dict[str, Dict[str, Dict[str, str]]]
+
+    class Config:
+        extra = Extra.allow

@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from db.db import Products, Reviews, Orders, db
 from .tools import check_jwt, check_image
 from .models import (ProductModel, ErrorModel,
-                     PostProductRequest, PutProductRequest)
+                     PostProductRequest, PutProductRequest, ReviewModel)
 
 
 api = Blueprint("api", __name__)
@@ -211,3 +211,44 @@ def single_product(name):
 
         item = ProductModel.create(product, request)
         return jsonify(item.dict())
+
+
+@api.route('/products/<name>/reviews', methods=['GET', 'POST'])
+def product_reviews(name):
+    reviews = (Products.query.filter_by(name=name)
+               .first_or_404()
+               .reviews)
+    if request.method == 'GET':
+        items = []
+        for review in reviews:
+            item = ReviewModel(
+                rating=review.rating,
+                _links=dict(
+                    self=dict(
+                        href=request.url
+                    ),
+                    owner=dict(
+                        href=(request.root_url +
+                              f'api/v1/users/{review.owner_id}')
+                    ),
+                    product=dict(
+                        href=(request.root_url +
+                              f'api/v1/products/{name}')
+                    )
+                )
+            )
+            if review.text:
+                item.text = review.text
+            if review.image_url:
+                item._embedded = dict(
+                    image=dict(
+                        _links=dict(
+                            self=(request.root_url +
+                                  review.image_url[1:])
+                        )
+                    )
+                )
+
+            items.append(item.dict())
+
+        return jsonify(items)
