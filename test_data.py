@@ -1,4 +1,4 @@
-from app import db, app, Products
+from app import db, app, Products, Users, Reviews
 
 with app.test_request_context():
     products = [
@@ -16,6 +16,50 @@ with app.test_request_context():
         ['Pita bread', 3.09, 78],
         ['Tortilla', 2.49, 19]
     ]
+
+    reviews = [
+        [1, 4, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 1, 'Tasty!!! Delicious!!!', 3, '/pictures/r.jpg'],
+        [1, 2, 'Tasty!!! Delicious!!!', 0, '/pictures/r.jpg'],
+        [1, 3, 'Tasty!!! Delicious!!!', 2, '/pictures/r.jpg'],
+        [1, 4, 'Tasty!!! Delicious!!!', 1, '/pictures/r.jpg'],
+        [1, 4, 'Tasty!!! Delicious!!!', 4, '/pictures/r.jpg'],
+        [1, 4, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 4, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 4, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 4, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 5, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 5, 'Tasty!!! Delicious!!!', 0, '/pictures/r.jpg'],
+        [1, 5, 'Tasty!!! Delicious!!!', 0, '/pictures/r.jpg'],
+        [1, 5, 'Tasty!!! De1icious!!!', 0, '/pictures/r.jpg'],
+        [1, 5, 'Tasty!!! Delicious!!!', 0, '/pictures/r.jpg'],
+        [1, 5, 'Tasty!!! Delicious!!!', 2, '/pictures/r.jpg'],
+        [1, 10, 'Tasty!!! Delicious!!!', 3, '/pictures/r.jpg'],
+        [1, 10, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 10, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 10, 'Tasty!!! Delicious!!!', 2, '/pictures/r.jpg']
+    ]
     for pr in products:
         db.session.add(Products(name=pr[0], price=pr[1], sales=pr[2]))
+
+    db.session.add(Users(
+        email='fiveweek234@gmail.com',
+        password=('pbkdf2:sha256:260000$gTCtXY6isNhOSOt1$9e0c0d71506'
+                  '3dba4ddc0762d2b746b7b459b3a6b4'
+                  '6234b868500c0fbdecb0a5e'),  # 123456
+        is_verified=True,
+        first_name='Fake',
+        last_name='Fakery',
+        address='Fake Republic, New Null, Non-Existent St., 92, 12 flat'
+
+    ))
+
+    for rv in reviews:
+        db.session.add(Reviews(owner_id=rv[0],
+                               product_id=rv[1],
+                               text=rv[2],
+                               rating=rv[3],
+                               image_url=rv[4]
+                               )
+                       )
     db.session.commit()
