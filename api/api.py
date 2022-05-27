@@ -56,7 +56,7 @@ def products():
         items = []
         for product in products[start-1:end]:
             item = ProductModel.create(product, request)
-            items.append(item.dict())
+            items.append(item.dict(by_alias=True, exclude_unset=True))
 
         return jsonify(total=len(products),
                        items_count=len(items), items=items)
@@ -118,7 +118,7 @@ def products():
 
         item = ProductModel(product, request)
 
-        return jsonify(item.dict())
+        return jsonify(item.dict(by_alias=True, exclude_unset=True))
 
 
 @api.route('/products/<name>', methods=['GET', 'DELETE', 'PUT'])
@@ -210,7 +210,7 @@ def single_product(name):
             ])
 
         item = ProductModel.create(product, request)
-        return jsonify(item.dict())
+        return jsonify(item.dict(by_alias=True, exclude_unset=True))
 
 
 @api.route('/products/<name>/reviews', methods=['GET', 'POST'])
@@ -218,9 +218,24 @@ def product_reviews(name):
     reviews = (Products.query.filter_by(name=name)
                .first_or_404()
                .reviews)
+
+    sort_type = request.args.get('sort')
+    if sort_type == 'asc_rating':
+        reviews = reviews.order_by(Reviews.rating)
+    elif sort_type == 'desc_rating':
+        reviews = reviews.order_by(Reviews.rating.desc())
+
+    reviews = reviews.all()
+
+    # Limit borders
+    start = (int(request.args.get('start', ''))
+             if request.args.get('start', '').isdigit() else 1)
+    end = (int(request.args.get('end', ''))
+           if request.args.get('end', '').isdigit() else len(reviews))
+
     if request.method == 'GET':
         items = []
-        for review in reviews:
+        for review in reviews[start-1:end]:
             item = ReviewModel(
                 rating=review.rating,
                 _links=dict(
@@ -237,10 +252,11 @@ def product_reviews(name):
                     )
                 )
             )
+
             if review.text:
                 item.text = review.text
             if review.image_url:
-                item._embedded = dict(
+                item.embedded = dict(
                     image=dict(
                         _links=dict(
                             self=(request.root_url +
@@ -249,6 +265,6 @@ def product_reviews(name):
                     )
                 )
 
-            items.append(item.dict())
+            items.append(item.dict(by_alias=True, exclude_unset=True))
 
         return jsonify(items)

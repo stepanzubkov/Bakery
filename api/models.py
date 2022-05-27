@@ -1,5 +1,5 @@
 from typing import Optional, Dict
-from pydantic import BaseModel, Extra, constr
+from pydantic import BaseModel, constr, Field
 
 from db.db import Products
 from flask import Request
@@ -28,11 +28,9 @@ class ProductModel(BaseModel):
     price: float
     sales: int
     description: Optional[str]
-    _links: Dict[str, Dict[str, str]]
-    _embedded: Dict[str, Dict[str, Dict[str, str]]]
 
     class Config:
-        extra = Extra.allow
+        extra = 'allow'
 
     @staticmethod
     def create(product: Products, request: Request) -> 'ProductModel':
@@ -47,6 +45,7 @@ class ProductModel(BaseModel):
         """
         item = ProductModel(
             name=product.name,
+            description=product.description,
             price=product.price,
             sales=product.sales,
             _links=dict(
@@ -72,17 +71,13 @@ class ProductModel(BaseModel):
                 )
             )
         )
-        if product.description:
-            item.description = product.description
-
         return item
 
 
 class ReviewModel(BaseModel):
     text: Optional[str]
     rating: int
-    _links: Dict[str, Dict[str, str]]
-    _embedded: Dict[str, Dict[str, Dict[str, str]]]
-
-    class Config:
-        extra = Extra.allow
+    links: Dict[str, Dict[str, str]] = Field(alias='_links')
+    embedded: Optional[
+        Dict[str, Dict[str, Dict[str, str]]]
+    ] = Field(alias='_embedded')
