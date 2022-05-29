@@ -20,7 +20,7 @@ def is_allowed(filename: str) -> bool:
     return False
 
 
-def check_jwt(token: str, secret_key: str, password: str) -> bool:
+def check_jwt(token: str, secret_key: str, password: str) -> bool | dict:
     """Check jwt token and return boolean
 
     Args:
@@ -36,11 +36,11 @@ def check_jwt(token: str, secret_key: str, password: str) -> bool:
             algorithms=['HS256']
         )
 
-        assert data['password'] == password
+        assert data['admin_password'] == password
 
     except Exception:
         return False
-    return True
+    return data
 
 
 def check_image(image: FileStorage) -> dict | None:

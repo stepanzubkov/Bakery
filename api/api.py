@@ -1,13 +1,15 @@
-from flask import current_app, request, jsonify, Blueprint
+from flask import current_app, request, jsonify, Blueprint, g
 
 import os
 from pydantic import ValidationError
+from werkzeug.security import check_password_hash as check_hash
 from werkzeug.utils import secure_filename
 
-from db.db import Products, Reviews, Orders, db
+from db.db import Products, Reviews, Orders, Users, db
 from .tools import check_jwt, check_image
 from .models import (ProductModel, ErrorModel,
-                     PostProductRequest, PutProductRequest, ReviewModel)
+                     PostProduct, PutProduct, ReviewModel,
+                     PostBaseReview)
 
 
 api = Blueprint("api", __name__)
@@ -15,19 +17,27 @@ api = Blueprint("api", __name__)
 
 @api.before_request
 def before_request():
-    if not check_jwt(request.headers.get('Authorization', '')
-                     .replace('Bearer ', ''),
-                     current_app.config['SECRET_KEY'],
-                     current_app.config['API_PASS']
-                     ):
+    auth = (request.headers.get('Authorization', '')
+            .replace('Bearer ', ''))
+    token_data = check_jwt(auth,
+                           current_app.config['SECRET_KEY'],
+                           current_app.config['API_PASS']
+                           )
+
+    if not token_data:
         return jsonify([
             ErrorModel(
                 source='token',
                 type='value_error.missing',
-                message=('value is not '
-                         'specified, expired or contains wrong data')
+                description=('value is not '
+                             'specified, expired or contains wrong data')
             ).dict()
         ])
+    if token_data.get('email') and token_data.get('password'):
+        user = Users.query.filter_by(email=token_data['email']).first()
+
+        if user and check_hash(user.password, token_data.get('password')):
+            g.user = user
 
 
 @api.route('/products', methods=['GET', 'POST'])
@@ -65,7 +75,7 @@ def products():
         custom_errors = []
 
         try:
-            prod = PostProductRequest(**request.form)
+            prod = PostProduct(**request.form)
         except ValidationError as errors:
             errors = errors.errors()
             for e in errors:
@@ -77,9 +87,9 @@ def products():
                     ).dict()
                 )
 
-        # If user specified image field, but not load file
         image = request.files.get('image')
 
+        # If user specified image field, but not load file
         if image and not image.filename:
             image = None
 
@@ -157,7 +167,7 @@ def single_product(name):
         custom_errors = []
 
         try:
-            prod = PutProductRequest(**request.form)
+            prod = PutProduct(**request.form)
         except ValidationError as errors:
             errors = errors.errors()
             for e in errors:
@@ -215,56 +225,98 @@ def single_product(name):
 
 @api.route('/products/<name>/reviews', methods=['GET', 'POST'])
 def product_reviews(name):
-    reviews = (Products.query.filter_by(name=name)
-               .first_or_404()
-               .reviews)
-
-    sort_type = request.args.get('sort')
-    if sort_type == 'asc_rating':
-        reviews = reviews.order_by(Reviews.rating)
-    elif sort_type == 'desc_rating':
-        reviews = reviews.order_by(Reviews.rating.desc())
-
-    reviews = reviews.all()
-
-    # Limit borders
-    start = (int(request.args.get('start', ''))
-             if request.args.get('start', '').isdigit() else 1)
-    end = (int(request.args.get('end', ''))
-           if request.args.get('end', '').isdigit() else len(reviews))
+    product = Products.query.filter_by(name=name).first_or_404()
 
     if request.method == 'GET':
+        reviews = product.reviews
+
+        sort_type = request.args.get('sort')
+        if sort_type == 'asc_rating':
+            reviews = reviews.order_by(Reviews.rating)
+        elif sort_type == 'desc_rating':
+            reviews = reviews.order_by(Reviews.rating.desc())
+
+        reviews = reviews.all()
+
+        # Limit borders
+        start = (int(request.args.get('start', ''))
+                 if request.args.get('start', '').isdigit() else 1)
+        end = (int(request.args.get('end', ''))
+               if request.args.get('end', '').isdigit() else len(reviews))
+
         items = []
         for review in reviews[start-1:end]:
-            item = ReviewModel(
-                rating=review.rating,
-                _links=dict(
-                    self=dict(
-                        href=request.url
-                    ),
-                    owner=dict(
-                        href=(request.root_url +
-                              f'api/v1/users/{review.owner_id}')
-                    ),
-                    product=dict(
-                        href=(request.root_url +
-                              f'api/v1/products/{name}')
-                    )
-                )
-            )
-
-            if review.text:
-                item.text = review.text
-            if review.image_url:
-                item.embedded = dict(
-                    image=dict(
-                        _links=dict(
-                            self=(request.root_url +
-                                  review.image_url[1:])
-                        )
-                    )
-                )
-
+            item = ReviewModel.create(review, request)
             items.append(item.dict(by_alias=True, exclude_unset=True))
 
         return jsonify(items)
+
+    elif request.method == 'POST':
+        if g.get('user'):
+            custom_errors = []
+
+            try:
+                rv = PostBaseReview(**request.form)
+            except ValidationError as errors:
+                errors = errors.errors()
+                for e in errors:
+                    custom_errors.append(
+                        ErrorModel(
+                            source=e['loc'][0],
+                            type=e['type'],
+                            description=e['msg']
+                        ).dict()
+                    )
+
+            image = request.files.get('image')
+
+            if image and not image.filename:
+                image = None
+
+            image_error = check_image(image)
+            image_error and custom_errors.append(image_error)
+
+            if custom_errors:
+                return jsonify(custom_errors)
+
+            try:
+                review = Reviews(
+                    owner_id=g.user.id,
+                    product_id=product.id,
+                    text=rv.text,
+                    rating=rv.rating
+                )
+
+                if image:
+                    filename = secure_filename(image.filename)
+                    pictures = os.path.join(
+                        current_app.instance_path, 'pictures')
+                    image.save(os.path.join(pictures, filename))
+                    review.image_url = f'/pictures/{filename}'
+
+                db.session.add(review)
+                db.session.commit()
+            except Exception as e:
+                current_app.logger.error(
+                    f'ERROR WHILE ADD PRODUCT REVIEW BY API: {e}')
+
+                db.session.rollback()
+                return jsonify([
+                    ErrorModel(
+                        source='server',
+                        type='server_error.database',
+                        description='Error with the database.'
+                    ).dict()
+                ])
+
+            else:
+                return jsonify(ReviewModel.create(review, request)
+                               .dict(by_alias=True, exclude_unset=True))
+        else:
+            return jsonify([
+                ErrorModel(
+                    source='token',
+                    type='value_error.missing_user_data',
+                    description='value doesn\'t contain user data'
+                )
+            ])

@@ -1,6 +1,6 @@
 # Bakery - website on flask
 
-This is a site for an American bakery. You can familiarize yourself with the functionality. The site is under construction
+This is a site for an American bakery. You can familiarize yourself with the functionality.
 
 ## Run app
 
