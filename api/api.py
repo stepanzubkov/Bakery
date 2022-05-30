@@ -6,7 +6,7 @@ from werkzeug.security import check_password_hash as check_hash
 from werkzeug.utils import secure_filename
 
 from db.db import Products, Reviews, Orders, Users, db
-from .tools import check_jwt, check_image
+from .tools import check_jwt, check_image, validate_request_body
 from .models import (ProductModel, ErrorModel,
                      PostProduct, PutProduct, ReviewModel,
                      PostBaseReview)
@@ -72,20 +72,7 @@ def products():
                        items_count=len(items), items=items)
 
     elif request.method == 'POST':
-        custom_errors = []
-
-        try:
-            prod = PostProduct(**request.form)
-        except ValidationError as errors:
-            errors = errors.errors()
-            for e in errors:
-                custom_errors.append(
-                    ErrorModel(
-                        source=e['loc'][0],
-                        type=e['type'],
-                        description=e['msg']
-                    ).dict()
-                )
+        custom_errors = [*validate_request_body(request, PostProduct)]
 
         image = request.files.get('image')
 
@@ -99,9 +86,9 @@ def products():
         if custom_errors:
             return jsonify(custom_errors)
 
-        name = prod.name
-        description = prod.description
-        price = prod.price
+        name = request.form['name']
+        description = request.form.get('description')
+        price = float(request.form['price'])
 
         try:
             product = Products(name=name, price=price,
@@ -126,7 +113,7 @@ def products():
                 ).dict()
             ])
 
-        item = ProductModel(product, request)
+        item = ProductModel.create(product, request)
 
         return jsonify(item.dict(by_alias=True, exclude_unset=True))
 
@@ -164,20 +151,7 @@ def single_product(name):
         )
 
     elif request.method == 'PUT':
-        custom_errors = []
-
-        try:
-            prod = PutProduct(**request.form)
-        except ValidationError as errors:
-            errors = errors.errors()
-            for e in errors:
-                custom_errors.append(
-                    ErrorModel(
-                        source=e['loc'][0],
-                        type=e['type'],
-                        description=e['msg']
-                    ).dict()
-                )
+        custom_errors = [*validate_request_body(request, PutProduct)]
 
         # If user specified image field, but not load file
         image = request.files.get('image')
@@ -191,7 +165,7 @@ def single_product(name):
             return jsonify(custom_errors)
 
         try:
-            for k, v in prod:
+            for k, v in request.form:
                 if v:
                     setattr(product, k, v)
 
@@ -253,20 +227,7 @@ def product_reviews(name):
 
     elif request.method == 'POST':
         if g.get('user'):
-            custom_errors = []
-
-            try:
-                rv = PostBaseReview(**request.form)
-            except ValidationError as errors:
-                errors = errors.errors()
-                for e in errors:
-                    custom_errors.append(
-                        ErrorModel(
-                            source=e['loc'][0],
-                            type=e['type'],
-                            description=e['msg']
-                        ).dict()
-                    )
+            custom_errors = [*validate_request_body(request, PostBaseReview)]
 
             image = request.files.get('image')
 
@@ -283,8 +244,8 @@ def product_reviews(name):
                 review = Reviews(
                     owner_id=g.user.id,
                     product_id=product.id,
-                    text=rv.text,
-                    rating=rv.rating
+                    text=request.form.get('text'),
+                    rating=request.form['rating']
                 )
 
                 if image:

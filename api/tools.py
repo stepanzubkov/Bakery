@@ -1,5 +1,9 @@
+from flask import Request
+
 import jwt
 import os
+from typing import Type
+from pydantic import BaseModel, ValidationError
 from werkzeug.datastructures import FileStorage
 
 from .models import ErrorModel
@@ -44,6 +48,14 @@ def check_jwt(token: str, secret_key: str, password: str) -> bool | dict:
 
 
 def check_image(image: FileStorage) -> dict | None:
+    """Check image and return error
+
+    Args:
+        image (FileStorage): image to check
+
+    Returns:
+        dict | None: error data
+    """
     if image and not is_allowed(image.filename):
         return ErrorModel(
             source='image',
@@ -51,3 +63,24 @@ def check_image(image: FileStorage) -> dict | None:
             description=('extension is not allowed.'
                          ' Please upload only .png or .jpg files.')
         ).dict()
+
+
+def validate_request_body(request: Request, model: Type[BaseModel]) -> list:
+    try:
+        model(**request.form)
+    except ValidationError as errors:
+        custom_errors = []
+        errors = errors.errors()
+        for e in errors:
+            custom_errors.append(
+                ErrorModel(
+                    source=e['loc'][0],
+                    type=e['type'],
+                    description=e['msg']
+                ).dict()
+            )
+
+        return custom_errors
+
+    else:
+        return []
