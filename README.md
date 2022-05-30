@@ -44,4 +44,6 @@ If you want to create your own migration, you must edit db models and run this c
 flask db migrate -m "My migration message"
 ```
 
+## Contribution
+If you want to contribute, please write me (contacts in bio)
 ### Good luck :)
