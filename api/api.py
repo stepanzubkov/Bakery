@@ -1,15 +1,14 @@
 from flask import current_app, request, jsonify, Blueprint, g
 
 import os
-from pydantic import ValidationError
 from werkzeug.security import check_password_hash as check_hash
 from werkzeug.utils import secure_filename
 
 from db.db import Products, Reviews, Orders, Users, db
 from .tools import check_jwt, check_image, validate_request_body
-from .models import (ProductModel, ErrorModel,
+from .models import (OrderModel, ProductModel, ErrorModel,
                      PostProduct, PutProduct, ReviewModel,
-                     PostBaseReview)
+                     PostBaseReview, PutBaseReview)
 
 
 api = Blueprint("api", __name__)
@@ -72,7 +71,7 @@ def products():
                        items_count=len(items), items=items)
 
     elif request.method == 'POST':
-        custom_errors = [*validate_request_body(request, PostProduct)]
+        custom_errors = validate_request_body(request, PostProduct)
 
         image = request.files.get('image')
 
@@ -151,7 +150,7 @@ def single_product(name):
         )
 
     elif request.method == 'PUT':
-        custom_errors = [*validate_request_body(request, PutProduct)]
+        custom_errors = validate_request_body(request, PutProduct)
 
         # If user specified image field, but not load file
         image = request.files.get('image')
@@ -226,8 +225,9 @@ def product_reviews(name):
         return jsonify(items)
 
     elif request.method == 'POST':
+
         if g.get('user'):
-            custom_errors = [*validate_request_body(request, PostBaseReview)]
+            custom_errors = validate_request_body(request, PostBaseReview)
 
             image = request.files.get('image')
 
@@ -281,3 +281,33 @@ def product_reviews(name):
                     description='value doesn\'t contain user data'
                 )
             ])
+
+
+@api.route('/products/<name>/orders', methods=['GET'])
+def product_orders(name):
+    product = Products.query.filter_by(name=name).first_or_404()
+
+    orders = product.orders
+
+    sort_type = request.args.get('sort')
+    if sort_type == 'asc_date':
+        orders = orders.order_by(Orders.created_at)
+    elif sort_type == 'desc_date':
+        orders = orders.order_by(Orders.created_at.desc())
+    orders = orders.all()
+
+    # Limit borders
+    start = (int(request.args.get('start', ''))
+             if request.args.get('start', '').isdigit() else 1)
+    end = (int(request.args.get('end', ''))
+           if request.args.get('end', '').isdigit() else len(orders))
+
+    items = []
+    for order in orders[start-1:end]:
+        items.append(
+            OrderModel.create(request, order).dict(
+                by_alias=True, exclude_unset=True)
+        )
+
+    return jsonify(total=len(orders), items_count=len(items),
+                   items=items)

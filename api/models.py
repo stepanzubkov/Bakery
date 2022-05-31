@@ -1,8 +1,10 @@
+from flask import Request
+
 from typing import Optional, Dict
+from datetime import datetime
 from pydantic import BaseModel, constr, Field
 
-from db.db import Products, Reviews
-from flask import Request
+from db.db import Products, Reviews, Orders
 
 
 class PostProduct(BaseModel):
@@ -122,3 +124,43 @@ class ReviewModel(BaseModel):
 class PostBaseReview(BaseModel):
     rating: int
     text: Optional[str]
+
+
+class PutBaseReview(BaseModel):
+    rating: Optional[int]
+    text: Optional[str]
+
+
+class OrderModel(BaseModel):
+    address: constr(max_length=100)
+    wishes: Optional[str]
+    created_at_utc: str
+    status: constr(max_length=50)
+    links: Dict[str, Dict[str, str]] = Field(alias='_links')
+
+    @staticmethod
+    def create(request: Request, order: Orders) -> 'OrderModel':
+        item = OrderModel(
+            address=order.address,
+            created_at_utc=order.created,
+            status=order.status,
+            _links=dict(
+                self=dict(
+                    href=(request.root_url +
+                          f'api/v1/orders/{order.id}')
+                ),
+                product=dict(
+                    href=(request.root_url +
+                          f'api/v1/products/{order.product.name}')
+                ),
+                owner=dict(
+                    href=(request.root_url +
+                          f'api/v1/users/{order.owner_id}')
+                )
+            )
+        )
+
+        if order.wishes:
+            item.wishes = order.wishes
+
+        return item
