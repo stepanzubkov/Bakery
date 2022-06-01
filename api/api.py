@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 
 from db.db import Products, Reviews, Orders, db
 from .tools import (check_image, get_jwt,
-                    get_user_from_token, validate_request_body)
+                    get_user_from_token, handle_error, validate_request_body)
 from .models import (OrderModel, ProductModel, ErrorModel,
                      PostProduct, PutProduct, ReviewModel,
                      PostBaseReview)
@@ -93,16 +93,7 @@ def products():
             db.session.add(product)
             db.session.commit()
         except Exception as e:
-            current_app.logger.error(f'ERROR WHILE ADDING PRODUCT BY API: {e}')
-
-            db.session.rollback()
-            return jsonify([
-                ErrorModel(
-                    source='server',
-                    type='server_error.database',
-                    description='Error with the database.'
-                ).dict()
-            ])
+            return handle_error(e)
 
         item = ProductModel.create(product, request)
 
@@ -126,16 +117,7 @@ def single_product(name):
             db.session.delete(product)
             db.session.commit()
         except Exception as e:
-            current_app.logger.error(f'ERROR WHILE DELETE PRODUCT BY API: {e}')
-
-            db.session.rollback()
-            return jsonify([
-                ErrorModel(
-                    source='server',
-                    type='server_error.database',
-                    description='Error with the database.'
-                ).dict()
-            ])
+            return handle_error(e)
 
         return jsonify(
             status='Successfuly'
@@ -156,9 +138,9 @@ def single_product(name):
             return jsonify(custom_errors)
 
         try:
-            for k, v in request.form:
-                if v:
-                    setattr(product, k, v)
+            for k in request.form:
+                if request.form[k]:
+                    setattr(product, k, request.form[k])
 
             if image:
                 old_image_url = product.image_url
@@ -173,16 +155,7 @@ def single_product(name):
             db.session.commit()
 
         except Exception as e:
-            current_app.logger.error(f'ERROR WHILE UPDATE PRODUCT BY API: {e}')
-
-            db.session.rollback()
-            return jsonify([
-                ErrorModel(
-                    source='server',
-                    type='server_error.database',
-                    description='Error with the database.'
-                ).dict()
-            ])
+            return handle_error(e)
 
         item = ProductModel.create(product, request)
         return jsonify(item.dict(by_alias=True, exclude_unset=True))
@@ -250,17 +223,7 @@ def product_reviews(name):
                 db.session.add(review)
                 db.session.commit()
             except Exception as e:
-                current_app.logger.error(
-                    f'ERROR WHILE ADD PRODUCT REVIEW BY API: {e}')
-
-                db.session.rollback()
-                return jsonify([
-                    ErrorModel(
-                        source='server',
-                        type='server_error.database',
-                        description='Error with the database.'
-                    ).dict()
-                ])
+                return handle_error(e)
 
             else:
                 return jsonify(ReviewModel.create(review, request)

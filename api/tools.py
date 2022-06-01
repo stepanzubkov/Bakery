@@ -1,4 +1,4 @@
-from flask import Request, current_app, request
+from flask import Request, current_app, request, jsonify
 
 import jwt
 import os
@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash as check_hash
 from werkzeug.datastructures import FileStorage
 
 from .models import ErrorModel
-from db.db import Users
+from db.db import Users, db
 
 
 def is_allowed(filename: str) -> bool:
@@ -103,3 +103,24 @@ def validate_request_body(request: Request, model: Type[BaseModel]) -> list:
 
     else:
         return []
+
+
+def handle_error(error_message: str) -> None:
+    """Writes error_message to logs, rollbacks db and throws an error
+
+    Args:
+        error_message (str): message to logs
+
+    Returns:
+        None
+    """
+    current_app.logger.error(error_message)
+
+    db.session.rollback()
+    return jsonify([
+        ErrorModel(
+            source='server',
+            type='server_error.database',
+            description='Error with the database.'
+        ).dict()
+    ])
