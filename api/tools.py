@@ -1,12 +1,14 @@
-from flask import Request
+from flask import Request, current_app, request
 
 import jwt
 import os
 from typing import Type
 from pydantic import BaseModel, ValidationError
+from werkzeug.security import check_password_hash as check_hash
 from werkzeug.datastructures import FileStorage
 
 from .models import ErrorModel
+from db.db import Users
 
 
 def is_allowed(filename: str) -> bool:
@@ -24,27 +26,44 @@ def is_allowed(filename: str) -> bool:
     return False
 
 
-def check_jwt(token: str, secret_key: str, password: str) -> bool | dict:
-    """Check jwt token and return boolean
+def jwt_belongs_admin(decoded_token: str) -> bool:
+    """Check the decoded_token contains right admin password
 
     Args:
-        token (str): token to check
-        secret_key (str): secret_key to decode key
-        password (str): password in token body to check
+        encoded_token (str): jwt token data
+
     Returns:
-        bool: token is valid
+        bool: decoded_token belongs admin
     """
-    try:
-        data = jwt.decode(
-            token, secret_key,
-            algorithms=['HS256']
-        )
+    return (
+        decoded_token.get('admin_password', '') ==
+        current_app.config['API_PASS']
+    )
 
-        assert data['admin_password'] == password
 
-    except Exception:
-        return False
-    return data
+def get_jwt() -> None | dict:
+    """Gets jwt token data from 'Authorization: Bearer ...' header
+
+        Returns:
+            dict | None: token data
+    """
+    token = request.headers.get('Authorization').replace('Bearer ', '')
+    data = jwt.decode(
+        token, current_app.config['SECRET_KEY'],
+        algorithms=['HS256']
+    )
+
+    if jwt_belongs_admin(data):
+        return data
+
+
+def get_user_from_token(data: dict) -> Users:
+    email = data.get('email', '')
+    password = data.get('password', '')
+
+    user = Users.query.filter_by(email=email).first()
+    if user and check_hash(user.password, password):
+        return user
 
 
 def check_image(image: FileStorage) -> dict | None:

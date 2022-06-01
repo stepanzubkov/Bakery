@@ -1,14 +1,14 @@
 from flask import current_app, request, jsonify, Blueprint, g
 
 import os
-from werkzeug.security import check_password_hash as check_hash
 from werkzeug.utils import secure_filename
 
-from db.db import Products, Reviews, Orders, Users, db
-from .tools import check_jwt, check_image, validate_request_body
+from db.db import Products, Reviews, Orders, db
+from .tools import (check_image, get_jwt,
+                    get_user_from_token, validate_request_body)
 from .models import (OrderModel, ProductModel, ErrorModel,
                      PostProduct, PutProduct, ReviewModel,
-                     PostBaseReview, PutBaseReview)
+                     PostBaseReview)
 
 
 api = Blueprint("api", __name__)
@@ -16,12 +16,7 @@ api = Blueprint("api", __name__)
 
 @api.before_request
 def before_request():
-    auth = (request.headers.get('Authorization', '')
-            .replace('Bearer ', ''))
-    token_data = check_jwt(auth,
-                           current_app.config['SECRET_KEY'],
-                           current_app.config['API_PASS']
-                           )
+    token_data = get_jwt()
 
     if not token_data:
         return jsonify([
@@ -32,11 +27,8 @@ def before_request():
                              'specified, expired or contains wrong data')
             ).dict()
         ])
-    if token_data.get('email') and token_data.get('password'):
-        user = Users.query.filter_by(email=token_data['email']).first()
 
-        if user and check_hash(user.password, token_data.get('password')):
-            g.user = user
+    g.user = get_user_from_token(token_data)
 
 
 @api.route('/products', methods=['GET', 'POST'])

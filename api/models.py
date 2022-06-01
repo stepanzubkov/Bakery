@@ -1,7 +1,6 @@
 from flask import Request
 
 from typing import Optional, Dict
-from datetime import datetime
 from pydantic import BaseModel, constr, Field
 
 from db.db import Products, Reviews, Orders
@@ -123,11 +122,6 @@ class ReviewModel(BaseModel):
 
 class PostBaseReview(BaseModel):
     rating: int
-    text: Optional[str]
-
-
-class PutBaseReview(BaseModel):
-    rating: Optional[int]
     text: Optional[str]
 
 
