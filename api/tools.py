@@ -8,7 +8,7 @@ from werkzeug.security import check_password_hash as check_hash
 from werkzeug.datastructures import FileStorage
 
 from .models import ErrorModel
-from db.db import Users, db
+from db.db import Users, Products, db
 
 
 def is_allowed(filename: str) -> bool:
@@ -47,11 +47,14 @@ def get_jwt() -> None | dict:
         Returns:
             dict | None: token data
     """
-    token = request.headers.get('Authorization').replace('Bearer ', '')
-    data = jwt.decode(
-        token, current_app.config['SECRET_KEY'],
-        algorithms=['HS256']
-    )
+    token = request.headers.get('Authorization', '').replace('Bearer ', '')
+    try:
+        data = jwt.decode(
+            token, current_app.config['SECRET_KEY'],
+            algorithms=['HS256']
+        )
+    except jwt.exceptions.DecodeError:
+        data = {}
 
     if jwt_belongs_admin(data):
         return data
@@ -86,7 +89,7 @@ def check_image(image: FileStorage) -> dict | None:
 
 def validate_request_body(request: Request, model: Type[BaseModel]) -> list:
     try:
-        model(**request.form)
+        request.form and model(**request.form)
     except ValidationError as errors:
         custom_errors = []
         errors = errors.errors()
@@ -124,3 +127,25 @@ def handle_error(error_message: str) -> None:
             description='Error with the database.'
         ).dict()
     ])
+
+
+def sorted_products() -> list:
+    """Sort products py sort type and returns
+
+    Returns:
+        list: products list
+    """
+    sort_type = request.args.get('sort', '')
+
+    if sort_type == 'desc_price':
+        products = Products.query.order_by(Products.price.desc()).all()
+    elif sort_type == 'asc_price':
+        products = Products.query.order_by(Products.price).all()
+    elif sort_type == 'popular':
+        products = Products.query.order_by(Products.sales.desc()).all()
+    elif sort_type == 'alphabet':
+        products = Products.query.order_by(Products.name).all()
+    else:
+        products = Products.query.all()
+
+    return products

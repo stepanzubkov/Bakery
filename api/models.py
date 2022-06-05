@@ -60,7 +60,7 @@ class ProductModel(BaseModel):
                 ),
                 orders=dict(
                     href=(request.url_root +
-                          f'api/v1/products/{product.name}/reviews')
+                          f'api/v1/products/{product.name}/orders')
                 )
             ),
             _embedded=dict(

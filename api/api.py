@@ -5,7 +5,8 @@ from werkzeug.utils import secure_filename
 
 from db.db import Products, Reviews, Orders, db
 from .tools import (check_image, get_jwt,
-                    get_user_from_token, handle_error, validate_request_body)
+                    get_user_from_token, handle_error,
+                    sorted_products, validate_request_body)
 from .models import (OrderModel, ProductModel, ErrorModel,
                      PostProduct, PutProduct, ReviewModel,
                      PostBaseReview)
@@ -26,7 +27,7 @@ def before_request():
                 description=('value is not '
                              'specified, expired or contains wrong data')
             ).dict()
-        ])
+        ]), 403
 
     g.user = get_user_from_token(token_data)
 
@@ -34,20 +35,7 @@ def before_request():
 @api.route('/products', methods=['GET', 'POST'])
 def products():
     if request.method == 'GET':
-        sort_type = request.args.get('sort', '')
-
-        # Match/case was replaced to support older python versions
-        if sort_type == 'desc_price':
-            products = Products.query.order_by(Products.price.desc()).all()
-        elif sort_type == 'asc_price':
-            products = Products.query.order_by(Products.price).all()
-        elif sort_type == 'popular':
-            products = Products.query.order_by(Products.sales.desc()).all()
-        elif sort_type == 'alphabet':
-            products = Products.query.order_by(Products.name).all()
-        else:
-            products = Products.query.all()
-
+        products = sorted_products()
         # Limit borders
         start = (int(request.args.get('start', ''))
                  if request.args.get('start', '').isdigit() else 1)
@@ -75,7 +63,7 @@ def products():
         image_error and custom_errors.append(image_error)
 
         if custom_errors:
-            return jsonify(custom_errors)
+            return jsonify(custom_errors), 400
 
         name = request.form['name']
         description = request.form.get('description')
@@ -93,7 +81,7 @@ def products():
             db.session.add(product)
             db.session.commit()
         except Exception as e:
-            return handle_error(e)
+            return handle_error(e), 500
 
         item = ProductModel.create(product, request)
 
@@ -117,7 +105,7 @@ def single_product(name):
             db.session.delete(product)
             db.session.commit()
         except Exception as e:
-            return handle_error(e)
+            return handle_error(e), 400
 
         return jsonify(
             status='Successfuly'
@@ -135,7 +123,7 @@ def single_product(name):
         image_error and custom_errors.append(image_error)
 
         if custom_errors:
-            return jsonify(custom_errors)
+            return jsonify(custom_errors), 400
 
         try:
             for k in request.form:
@@ -155,7 +143,7 @@ def single_product(name):
             db.session.commit()
 
         except Exception as e:
-            return handle_error(e)
+            return handle_error(e), 500
 
         item = ProductModel.create(product, request)
         return jsonify(item.dict(by_alias=True, exclude_unset=True))
@@ -223,7 +211,7 @@ def product_reviews(name):
                 db.session.add(review)
                 db.session.commit()
             except Exception as e:
-                return handle_error(e)
+                return handle_error(e), 500
 
             else:
                 return jsonify(ReviewModel.create(review, request)
