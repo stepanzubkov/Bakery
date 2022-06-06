@@ -89,7 +89,7 @@ def check_image(image: FileStorage) -> dict | None:
 
 def validate_request_body(request: Request, model: Type[BaseModel]) -> list:
     try:
-        request.form and model(**request.form)
+        model(**request.form)
     except ValidationError as errors:
         custom_errors = []
         errors = errors.errors()

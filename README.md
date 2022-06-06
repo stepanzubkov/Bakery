@@ -44,6 +44,25 @@ If you want to create your own migration, you must edit db models and run this c
 flask db migrate -m "My migration message"
 ```
 
+## Tests
+
+For tests, you should run the app.
+Then, go to the tests folder and run tests with following commands:
+
+```bash
+cd tests
+pytest
+```
+
+Run single test, for example:
+
+```bash
+pytest api/test_products.py
+
+```
+
 ## Contribution
+
 If you want to contribute, please write me (contacts in bio)
+
 ### Good luck :)

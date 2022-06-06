@@ -175,7 +175,8 @@ def product_reviews(name):
             item = ReviewModel.create(review, request)
             items.append(item.dict(by_alias=True, exclude_unset=True))
 
-        return jsonify(items)
+        return jsonify(total=len(reviews),
+                       items_count=len(items), items=items)
 
     elif request.method == 'POST':
 
@@ -191,7 +192,7 @@ def product_reviews(name):
             image_error and custom_errors.append(image_error)
 
             if custom_errors:
-                return jsonify(custom_errors)
+                return jsonify(custom_errors), 400
 
             try:
                 review = Reviews(
@@ -222,8 +223,8 @@ def product_reviews(name):
                     source='token',
                     type='value_error.missing_user_data',
                     description='value doesn\'t contain user data'
-                )
-            ])
+                ).dict()
+            ]), 400
 
 
 @api.route('/products/<name>/orders', methods=['GET'])

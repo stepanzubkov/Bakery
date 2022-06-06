@@ -1,5 +1,4 @@
 import jwt
-from pytest import fixture
 from requests import request, Response
 
 
