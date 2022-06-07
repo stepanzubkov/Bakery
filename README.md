@@ -15,7 +15,14 @@ The container will run in background (option -d) and you can easy run different 
 If you want insert into db test data, you must run this command:
 
 ```bash
-docker-compose exec -w /app app 'python test_data.py'
+docker-compose exec -w /app app sh
+```
+
+Then, type:
+
+```bash
+flask db upgrade
+python test_data.py
 ```
 
 Blog page will show youtube videos from channel only when you spicify the access token.
@@ -35,7 +42,7 @@ docker-compose exec -w /app app sh
 And, you can upgrade db:
 
 ```bash
-flask db upgrate
+flask db upgrade
 ```
 
 If you want to create your own migration, you must edit db models and run this command in the container:

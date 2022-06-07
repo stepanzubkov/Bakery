@@ -1,6 +1,9 @@
-from app import db, app, Products, Users, Reviews
+from werkzeug.security import generate_password_hash
+
+from app import db, app, Products, Users, Reviews, Orders
 
 with app.test_request_context():
+    db.create_all()
     products = [
         ['Croissant', 1.49, 0],
         ['Bagel', 0.99, 129],
@@ -14,7 +17,8 @@ with app.test_request_context():
         ['Green tea', 2.99, 18],
         ['Black tea', 2.99, 12],
         ['Pita bread', 3.09, 78],
-        ['Tortilla', 2.49, 19]
+        ['Tortilla', 2.49, 19],
+        ['Test product', 2.99, 32]
     ]
 
     reviews = [
@@ -43,10 +47,8 @@ with app.test_request_context():
         db.session.add(Products(name=pr[0], price=pr[1], sales=pr[2]))
 
     db.session.add(Users(
-        email='fiveweek234@gmail.com',
-        password=('pbkdf2:sha256:260000$gTCtXY6isNhOSOt1$9e0c0d71506'
-                  '3dba4ddc0762d2b746b7b459b3a6b4'
-                  '6234b868500c0fbdecb0a5e'),  # 123456
+        email='fakeuser123@gmail.com',
+        password=generate_password_hash('123456'),
         is_verified=True,
         first_name='Fake',
         last_name='Fakery',
