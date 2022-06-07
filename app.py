@@ -351,6 +351,8 @@ def menu():
 
     page = request.args.get('page')
     page = int(page) if str(page).isdigit() else 1
+    if page > len(pages):
+        page = len(pages)
 
     if page == 1:
         nav_pages = [
