@@ -398,8 +398,8 @@ def product(name):
 def product_buy(name):
     form = BuyForm()
     product = Products.query.filter_by(name=name).first_or_404()
+    user = Users.query.get(current_user.get_id())
     if form.validate_on_submit():
-        user = Users.query.get(current_user.get_id())
         address = (form.address.data
                    if form.address_choose.data == 'custom'
                    else user.address)
@@ -435,7 +435,7 @@ def product_buy(name):
             return redirect(url)
 
     return render_template('buy.html', title='Order', product=product,
-                           form=form)
+                           form=form, user=user)
 
 
 @app.route('/products/<name>/review', methods=['GET', 'POST'])

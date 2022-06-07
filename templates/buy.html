@@ -15,10 +15,14 @@
     <h1 class="form_title">Order {{product.name}}</h1>
     {{ form.csrf_token() }}
     <p>{{ form.wishes.label() }} {{ form.wishes() }}
-    <p>{{ form.address_choose.label() }}
+            
+    {% if user.address %}
+        <p>{{ form.address_choose.label() }}
         {% for radio in form.address_choose %}
                 <p>{{ radio(class='basic_checkbox', onclick='unableField(this);') }} {{ radio.label(style='display: inline-block;') }}
-        {% endfor %}
+        {% endfor %}   
+    {% endif %}
+
     <p>{{ form.address.label() }} {{ form.address(disabled='disabled', class='basic_field') }}
         {{ form.submit(class='submit') }}
 </form>
