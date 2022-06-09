@@ -18,6 +18,11 @@ class PutProduct(BaseModel):
     price: Optional[float]
 
 
+class PostBaseReview(BaseModel):
+    rating: int
+    text: Optional[str]
+
+
 class ErrorModel(BaseModel):
     source: str
     type: str
@@ -118,11 +123,6 @@ class ReviewModel(BaseModel):
             )
 
         return item
-
-
-class PostBaseReview(BaseModel):
-    rating: int
-    text: Optional[str]
 
 
 class OrderModel(BaseModel):
