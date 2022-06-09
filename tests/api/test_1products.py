@@ -43,8 +43,6 @@ def test_postProduct_doNotSendData_returnRequestErrors():
         url='http://localhost:5000/api/v1/products', method='post')
 
     assert response.status_code == 400
-    assert len(response.json()) == 2
-    assert response.json()[0]['type'] == 'value_error.missing'
 
 
 def test_postProducts_doNotSendImage_returnOk():
