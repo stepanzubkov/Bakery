@@ -36,7 +36,7 @@ def before_request():
 
 
 @api.route('/products', methods=['GET', 'POST'])
-def products():
+def products_page():
     if request.method == 'GET':
         products = sorted_products()
         start_border, end_border = get_borders(products)
@@ -188,3 +188,19 @@ def product_orders(name):
 
     return jsonify(total=len(orders), items_count=len(items),
                    items=items)
+
+
+@api.route('/reviews', methods=['GET'])
+def reviews_page():
+    reviews = sorted_reviews(Reviews.query)
+    start_border, end_border = get_borders(reviews)
+
+    items = [
+        ReviewModel.create(review, request).dict(
+            by_alias=True, exclude_unset=True
+        )
+        for review in reviews[start_border:end_border]
+    ]
+
+    return jsonify(total=len(reviews),
+                   items_count=len(items), items=items)
