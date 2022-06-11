@@ -38,11 +38,31 @@ with app.test_request_context():
         [1, 5, 'Tasty!!! De1icious!!!', 0, '/pictures/r.jpg'],
         [1, 5, 'Tasty!!! Delicious!!!', 0, '/pictures/r.jpg'],
         [1, 5, 'Tasty!!! Delicious!!!', 2, '/pictures/r.jpg'],
-        [1, 10, 'Tasty!!! Delicious!!!', 3, '/pictures/r.jpg'],
-        [1, 10, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
-        [1, 10, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
-        [1, 10, 'Tasty!!! Delicious!!!', 2, '/pictures/r.jpg']
+        [1, 14, 'Tasty!!! Delicious!!!', 3, '/pictures/r.jpg'],
+        [1, 14, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 14, 'Tasty!!! Delicious!!!', 5, '/pictures/r.jpg'],
+        [1, 14, 'Tasty!!! Delicious!!!', 2, '/pictures/r.jpg']
     ]
+
+    orders = [
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 14, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 1, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 12, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 11, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 11, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 11, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 11, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 11, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some'],
+        [1, 11, 'Fake Republic, New Null, Non-Existent St., 92, 12 flat', 'Some']
+    ]
+
     for pr in products:
         db.session.add(Products(name=pr[0], price=pr[1], sales=pr[2]))
 
@@ -63,5 +83,13 @@ with app.test_request_context():
                                rating=rv[3],
                                image_url=rv[4]
                                )
+                       )
+
+    for order in orders:
+        db.session.add(Orders(owner_id=order[0],
+                              product_id=order[1],
+                              address=order[2],
+                              wishes=order[3]
+                              )
                        )
     db.session.commit()

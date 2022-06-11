@@ -133,7 +133,7 @@ class OrderModel(BaseModel):
     links: Dict[str, Dict[str, str]] = Field(alias='_links')
 
     @staticmethod
-    def create(request: Request, order: Orders) -> 'OrderModel':
+    def create(order: Orders, request: Request) -> 'OrderModel':
         item = OrderModel(
             address=order.address,
             created_at_utc=order.created,
