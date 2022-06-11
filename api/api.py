@@ -3,7 +3,7 @@ from flask import current_app, request, jsonify, Blueprint, g
 import os
 from werkzeug.utils import secure_filename
 
-from db.db import Products, Reviews
+from db.db import Products, Reviews, Orders
 from .tools import (get_jwt, get_request_errors,
                     get_user_from_token,
                     sorted_products, sorted_reviews, sorted_orders,
@@ -204,3 +204,19 @@ def reviews_page():
 
     return jsonify(total=len(reviews),
                    items_count=len(items), items=items)
+
+
+@api.route('/orders', methods=['GET'])
+def orders_page():
+    orders = sorted_orders(Orders.query)
+    start_border, end_border = get_borders(orders)
+
+    items = [
+        OrderModel.create(order, request).dict(
+            by_alias=True, exclude_unset=True
+        )
+        for order in orders[start_border:end_border]
+    ]
+
+    return jsonify(total=len(orders), items_count=len(items),
+                   items=items)
