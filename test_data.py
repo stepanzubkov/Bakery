@@ -76,6 +76,13 @@ with app.test_request_context():
 
     ))
 
+    db.session.add(Users(
+        email='fakeotheruser234@gmail.com',
+        password=generate_password_hash('qwerty'),
+        first_name='Lake',
+        last_name='Cakery'
+    ))
+
     for rv in reviews:
         db.session.add(Reviews(owner_id=rv[0],
                                product_id=rv[1],
