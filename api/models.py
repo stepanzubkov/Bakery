@@ -1,9 +1,9 @@
-from flask import Request
+from flask import request
 
 from typing import Optional, Dict
 from pydantic import BaseModel, constr, Field
 
-from db.db import Products, Reviews, Orders
+from db.db import Products, Reviews, Orders, Users
 
 
 class PostProduct(BaseModel):
@@ -40,16 +40,7 @@ class ProductModel(BaseModel):
     ] = Field(alias='_embedded')
 
     @staticmethod
-    def create(product: Products, request: Request) -> 'ProductModel':
-        """Creates ProductModel object from product and flask request
-
-        Args:
-            product (Products): database product object.
-            request (Request): flask request object.
-
-        Returns:
-            ProductModel: pydantic model object.
-        """
+    def create(product: Products) -> 'ProductModel':
         item = ProductModel(
             name=product.name,
             price=product.price,
@@ -92,7 +83,7 @@ class ReviewModel(BaseModel):
     ] = Field(alias='_embedded')
 
     @staticmethod
-    def create(review: Reviews, request: Request) -> 'ReviewModel':
+    def create(review: Reviews) -> 'ReviewModel':
         item = ReviewModel(
             rating=review.rating,
             _links=dict(
@@ -133,7 +124,7 @@ class OrderModel(BaseModel):
     links: Dict[str, Dict[str, str]] = Field(alias='_links')
 
     @staticmethod
-    def create(order: Orders, request: Request) -> 'OrderModel':
+    def create(order: Orders) -> 'OrderModel':
         item = OrderModel(
             address=order.address,
             created_at_utc=order.created,
@@ -156,5 +147,41 @@ class OrderModel(BaseModel):
 
         if order.wishes:
             item.wishes = order.wishes
+
+        return item
+
+
+class UserModel(BaseModel):
+    email: constr(max_length=100)
+    is_verified: bool
+    first_name: constr(max_length=50)
+    last_name: constr(max_length=50)
+    address: Optional[constr(max_length=100)]
+    links: Dict[str, Dict[str, str]] = Field(alias='_links')
+
+    @staticmethod
+    def create(user: Users) -> 'UserModel':
+        item = UserModel(
+            email=user.email,
+            is_verified=user.is_verified,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            _links=dict(
+                self=dict(
+                    href=(request.root_url +
+                          'api/v1/user')
+                ),
+                reviews=dict(
+                    href=(request.root_url +
+                          'api/v1/user/reviews')
+                ),
+                orders=dict(
+                    href=(request.root_url +
+                          'api/v1/user/orders')
+                )
+            )
+        )
+        if user.address:
+            item.address = user.address
 
         return item

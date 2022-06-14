@@ -3,14 +3,14 @@ from flask import current_app, request, jsonify, Blueprint, g
 import os
 from werkzeug.utils import secure_filename
 
-from db.db import Products, Reviews, Orders
+from db.db import Products, Reviews, Orders, Users
 from .tools import (get_jwt, get_request_errors,
-                    get_user_from_token,
+                    get_user_from_token, sorted_users,
                     sorted_products, sorted_reviews, sorted_orders,
-                    add_to_db, get_borders, delete_product)
+                    filtered_users, add_to_db, get_borders, delete_product)
 from .models import (OrderModel, ProductModel, ErrorModel,
                      PostProduct, PutProduct, ReviewModel,
-                     PostBaseReview)
+                     PostBaseReview, UserModel)
 
 
 api = Blueprint("api", __name__)
@@ -42,7 +42,7 @@ def products_page():
         start_border, end_border = get_borders(products)
 
         items = [
-            ProductModel.create(product, request).dict(
+            ProductModel.create(product).dict(
                 by_alias=True, exclude_unset=True
             )
             for product in products[start_border:end_border]
@@ -71,7 +71,7 @@ def products_page():
         if db_error:
             return db_error
 
-        item = ProductModel.create(product, request)
+        item = ProductModel.create(product)
         return jsonify(item.dict(by_alias=True, exclude_unset=True))
 
 
@@ -80,7 +80,7 @@ def single_product(name):
     product = Products.query.filter_by(name=name).first_or_404()
 
     if request.method == 'GET':
-        item = ProductModel.create(product, request)
+        item = ProductModel.create(product)
         return jsonify(item.dict(
             by_alias=True, exclude_unset=True
         ))
@@ -115,7 +115,7 @@ def single_product(name):
         if db_error:
             return db_error
 
-        item = ProductModel.create(product, request)
+        item = ProductModel.create(product)
         return jsonify(item.dict(by_alias=True, exclude_unset=True))
 
 
@@ -128,7 +128,7 @@ def product_reviews(name):
         start_border, end_border = get_borders(reviews)
 
         items = [
-            ReviewModel.create(review, request).dict(
+            ReviewModel.create(review).dict(
                 by_alias=True, exclude_unset=True
             )
             for review in reviews[start_border:end_border]
@@ -139,7 +139,7 @@ def product_reviews(name):
 
     elif request.method == 'POST':
 
-        if g.get('user'):
+        if g.get('user') and g.user.is_verified:
             image = request.files.get('image')
             errors = get_request_errors(PostBaseReview, image)
             if errors:
@@ -160,7 +160,7 @@ def product_reviews(name):
             if db_error:
                 return db_error
 
-            item = ReviewModel.create(review, request)
+            item = ReviewModel.create(review)
             return jsonify(item.dict(by_alias=True, exclude_unset=True))
         else:
             return jsonify([
@@ -180,7 +180,7 @@ def product_orders(name):
     start_border, end_border = get_borders(orders)
 
     items = [
-        OrderModel.create(order, request).dict(
+        OrderModel.create(order).dict(
             by_alias=True, exclude_unset=True
         )
         for order in orders[start_border:end_border]
@@ -196,7 +196,7 @@ def reviews_page():
     start_border, end_border = get_borders(reviews)
 
     items = [
-        ReviewModel.create(review, request).dict(
+        ReviewModel.create(review).dict(
             by_alias=True, exclude_unset=True
         )
         for review in reviews[start_border:end_border]
@@ -212,7 +212,7 @@ def orders_page():
     start_border, end_border = get_borders(orders)
 
     items = [
-        OrderModel.create(order, request).dict(
+        OrderModel.create(order).dict(
             by_alias=True, exclude_unset=True
         )
         for order in orders[start_border:end_border]
@@ -220,3 +220,37 @@ def orders_page():
 
     return jsonify(total=len(orders), items_count=len(items),
                    items=items)
+
+
+@api.route('/users', methods=['GET'])
+def users_page():
+    users = sorted_users(filtered_users(Users.query))
+    start_border, end_border = get_borders(users)
+
+    items = [
+        UserModel.create(user).dict(
+            by_alias=True, exclude_unset=True
+        )
+        for user in users[start_border:end_border]
+    ]
+
+    return jsonify(total=len(Users.query.all()), items_count=len(items),
+                   items=items)
+
+
+@api.route('/user', methods=['GET', 'POST'])
+def user_page():
+    if request.method == 'GET':
+        if g.get('user'):
+            item = UserModel.create(g.user).dict(
+                by_alias=True, exclude_unset=True
+            )
+            return jsonify(item)
+        else:
+            return jsonify([
+                ErrorModel(
+                    source='token',
+                    type='value_error.missing_user_data',
+                    description='value doesn\'t contain user data'
+                ).dict()
+            ]), 400

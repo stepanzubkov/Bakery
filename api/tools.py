@@ -1,4 +1,5 @@
 from flask import current_app, request, jsonify
+from flask_sqlalchemy import BaseQuery
 
 import os
 import jwt
@@ -149,6 +150,34 @@ def sorted_orders(orders) -> list:
         orders = orders.order_by(Orders.created_at.desc())
 
     return orders.all()
+
+
+def sorted_users(users) -> list:
+    sort_type = request.args.get('sort')
+
+    if sort_type == 'email':
+        users = users.order_by(Users.email)
+    elif sort_type == 'first_name':
+        users = users.order_by(Users.first_name)
+    elif sort_type == 'last_name':
+        users = users.order_by(Users.last_name)
+
+    return users.all()
+
+
+def filtered_users(users) -> BaseQuery:
+    filter_type = request.args.get('filter')
+
+    if filter_type == 'is_verified':
+        users = users.filter_by(is_verified=True)
+    elif filter_type == 'is_not_verified':
+        users = users.filter_by(is_verified=False)
+    elif filter_type == 'with_address':
+        users = users.filter(Users.address != '')
+    elif filter_type == 'without_address':
+        users = users.filter(Users.address == None)
+
+    return users
 
 
 def get_borders(elements):
