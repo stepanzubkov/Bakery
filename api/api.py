@@ -238,8 +238,9 @@ def users_page():
                    items=items)
 
 
-@api.route('/user', methods=['GET', 'POST'])
+@api.route('/user', methods=['GET'])
 def user_page():
+    # TODO: create put and delete methods
     if request.method == 'GET':
         if g.get('user'):
             item = UserModel.create(g.user).dict(
@@ -254,3 +255,53 @@ def user_page():
                     description='value doesn\'t contain user data'
                 ).dict()
             ]), 400
+
+
+@api.route('/user/reviews', methods=['GET'])
+def user_reviews():
+    if g.get('user') and g.user.is_verified:
+        reviews = sorted_reviews(g.user.reviews)
+        start_border, end_border = get_borders(reviews)
+
+        items = [
+            ReviewModel.create(review).dict(
+                by_alias=True, exclude_unset=True
+            )
+            for review in reviews[start_border:end_border]
+        ]
+
+        return jsonify(total=len(reviews),
+                       items_count=len(items), items=items)
+    else:
+        return jsonify([
+            ErrorModel(
+                source='token',
+                type='value_error.missing_user_data',
+                description='value doesn\'t contain user data'
+            ).dict()
+        ]), 400
+
+
+@api.route('/user/orders', methods=['GET'])
+def user_orders():
+    if g.get('user') and g.user.is_verified:
+        orders = sorted_orders(g.user.orders)
+        start_border, end_border = get_borders(orders)
+
+        items = [
+            OrderModel.create(order).dict(
+                by_alias=True, exclude_unset=True
+            )
+            for order in orders[start_border:end_border]
+        ]
+
+        return jsonify(total=len(orders),
+                       items_count=len(items), items=items)
+    else:
+        return jsonify([
+            ErrorModel(
+                source='token',
+                type='value_error.missing_user_data',
+                description='value doesn\'t contain user data'
+            ).dict()
+        ]), 400
