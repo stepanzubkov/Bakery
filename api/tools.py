@@ -35,7 +35,7 @@ def get_jwt() -> dict:
         return {}
 
 
-def get_user_from_token(data: dict) -> Users:
+def get_user_from_token(data: dict) -> Users | None:
     email = data.get('email', '')
     password = data.get('password', '')
 
@@ -93,14 +93,6 @@ def get_request_errors(model: Type[BaseModel], image: FileStorage) -> list:
 
 
 def handle_error(error_message: str) -> None:
-    """Writes error_message to logs, rollbacks db and throws an error
-
-    Args:
-        error_message (str): message to logs
-
-    Returns:
-        None
-    """
     current_app.logger.error(error_message)
 
     db.session.rollback()
