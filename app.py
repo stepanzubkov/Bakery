@@ -13,6 +13,7 @@ import requests
 from threading import Thread
 from datetime import datetime
 from cloudipsp import Api, Checkout
+import sqlalchemy
 from werkzeug.utils import secure_filename
 from wtforms.validators import NoneOf
 from werkzeug.security import (
@@ -30,6 +31,8 @@ from forms import (
     EmailChangeForm, PasswordChangeForm, SortForm,
     ReviewForm, BuyForm
 )
+
+import sqlalchemy
 
 
 app = Flask(__name__, instance_path='/app')

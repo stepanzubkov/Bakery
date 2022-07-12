@@ -10,5 +10,3 @@ psycopg2-binary
 requests
 cloudipsp
 pyjwt
-pytest
-mock
